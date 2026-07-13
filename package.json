@@ -1,0 +1,21 @@
+{
+  "name": "vdt2026agg",
+  "version": "1.0.0",
+  "description": "Viettel Digital Talent 2026 MiniProject Evaluations Aggregator Dashboard",
+  "main": "index.html",
+  "scripts": {
+    "dev": "npx http-server -p 8080"
+  },
+  "keywords": [
+    "vdt",
+    "viettel",
+    "aggregator",
+    "dashboard",
+    "aws-console"
+  ],
+  "author": "Antigravity",
+  "license": "MIT",
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}
