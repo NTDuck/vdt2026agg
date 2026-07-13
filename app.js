@@ -1,7 +1,8 @@
 /**
- * AWS Console Aesthetic - VDT 2026 MiniProject Evaluations Aggregator
+ * Console Aesthetic - VDT 2026 MiniProject Evaluations Aggregator
  * Client-side script handling data loading, parsing, adjustments, charts, and table rendering.
  * Conforms mathematically to nocturnal16/vsd (PERCENTILE.INC, PERCENTRANK.INC, and Dense Ranking).
+ * Implements 10-record pagination, "participant" vocabulary, and smooth layout animations.
  */
 
 // Configuration
@@ -12,12 +13,13 @@ const DEFAULT_SPREADSHEET_URL = `https://docs.google.com/spreadsheets/d/${DEFAUL
 const state = {
   spreadsheetId: DEFAULT_SPREADSHEET_ID,
   spreadsheetUrl: DEFAULT_SPREADSHEET_URL,
-  allParticipants: [], // Raw student list parsed from Excel
+  allParticipants: [], // Raw participant list parsed from Excel
   activeTrack: 'SwE',  // active track filter: 'SwE' (All), 'System', 'Web', 'HPC'
   activeBoard: 'all',  // board (sheet name) filter: 'all' or specific sheet
   searchQuery: '',     // search query string
   interpolateScore: false,
   includeResigned: false,
+  currentPage: 1,      // Pagination state: page index starting at 1
   theme: 'dark',       // Default theme, will be adjusted dynamically
   charts: {},          // ChartJS instances
   lastUpdated: ''
@@ -160,6 +162,7 @@ function setupEventListeners() {
   interpolateCheckbox.addEventListener('change', (e) => {
     state.interpolateScore = e.target.checked;
     saveSettings();
+    state.currentPage = 1;
     renderAll();
   });
 
@@ -167,6 +170,7 @@ function setupEventListeners() {
   includeResignedCheckbox.addEventListener('change', (e) => {
     state.includeResigned = e.target.checked;
     saveSettings();
+    state.currentPage = 1;
     renderAll();
   });
 
@@ -174,24 +178,16 @@ function setupEventListeners() {
   const tableSearch = document.getElementById('tableSearch');
   tableSearch.addEventListener('input', (e) => {
     state.searchQuery = e.target.value;
-    document.getElementById('globalSearch').value = state.searchQuery;
-    renderTableOnly();
-  });
-
-  // Global search input in header
-  const globalSearch = document.getElementById('globalSearch');
-  globalSearch.addEventListener('input', (e) => {
-    state.searchQuery = e.target.value;
-    document.getElementById('tableSearch').value = state.searchQuery;
+    state.currentPage = 1;
     renderTableOnly();
   });
 
   // Keyboard shortcut for search ("/" key)
   document.addEventListener('keydown', (e) => {
-    if (e.key === '/' && document.activeElement !== globalSearch && document.activeElement !== tableSearch) {
+    if (e.key === '/' && document.activeElement !== tableSearch) {
       e.preventDefault();
-      globalSearch.focus();
-      globalSearch.select();
+      tableSearch.focus();
+      tableSearch.select();
     }
   });
 
@@ -199,6 +195,7 @@ function setupEventListeners() {
   const boardFilterSelect = document.getElementById('boardFilterSelect');
   boardFilterSelect.addEventListener('change', (e) => {
     state.activeBoard = e.target.value;
+    state.currentPage = 1;
     renderTableOnly();
   });
 
@@ -246,6 +243,25 @@ function setupEventListeners() {
     renderTimeChart();
   });
 
+  // Pagination buttons
+  const prevPageBtn = document.getElementById('prevPageBtn');
+  prevPageBtn.addEventListener('click', () => {
+    if (state.currentPage > 1) {
+      state.currentPage--;
+      renderTableOnly();
+    }
+  });
+
+  const nextPageBtn = document.getElementById('nextPageBtn');
+  nextPageBtn.addEventListener('click', () => {
+    const totalRecords = getFilteredListCount();
+    const totalPages = Math.ceil(totalRecords / 10) || 1;
+    if (state.currentPage < totalPages) {
+      state.currentPage++;
+      renderTableOnly();
+    }
+  });
+
   // Close toast alert
   const alertCloseBtn = document.getElementById('alertCloseBtn');
   alertCloseBtn.addEventListener('click', () => {
@@ -279,59 +295,6 @@ function getChartThemeColors() {
     tooltipBody: isDark ? '#e2e8f0' : '#545b64',
     tooltipBorder: isDark ? 'rgba(255, 255, 255, 0.1)' : '#eaeded'
   };
-}
-
-/**
- * Load settings from localStorage
- */
-function loadSavedSettings() {
-  const savedId = localStorage.getItem('vdt2026_sheet_id');
-  const savedUrl = localStorage.getItem('vdt2026_sheet_url');
-  const savedInterpolate = localStorage.getItem('vdt2026_interpolate');
-  const savedIncludeResigned = localStorage.getItem('vdt2026_include_resigned');
-  const savedTheme = localStorage.getItem('vdt2026_theme');
-  
-  if (savedId) state.spreadsheetId = savedId;
-  if (savedUrl) state.spreadsheetUrl = savedUrl;
-  
-  if (savedInterpolate !== null) {
-    state.interpolateScore = savedInterpolate === 'true';
-    document.getElementById('interpolateScoreCheckbox').checked = state.interpolateScore;
-  }
-  if (savedIncludeResigned !== null) {
-    state.includeResigned = savedIncludeResigned === 'true';
-    document.getElementById('includeResignedCheckbox').checked = state.includeResigned;
-  }
-  
-  // Theme initialization: local storage -> browser setting -> default dark
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  state.theme = savedTheme || (prefersDark ? 'dark' : 'light');
-  applyTheme(state.theme);
-}
-
-/**
- * Save settings to localStorage
- */
-function saveSettings() {
-  localStorage.setItem('vdt2026_sheet_id', state.spreadsheetId);
-  localStorage.setItem('vdt2026_sheet_url', state.spreadsheetUrl);
-  localStorage.setItem('vdt2026_interpolate', state.interpolateScore);
-  localStorage.setItem('vdt2026_include_resigned', state.includeResigned);
-  localStorage.setItem('vdt2026_theme', state.theme);
-}
-
-/**
- * Extracts Google Spreadsheet ID from a URL or returns it directly if it's already an ID.
- */
-function getSpreadsheetId(urlOrId) {
-  if (!urlOrId) return null;
-  let str = urlOrId.trim();
-  if (str.length === 44) return str;
-  let match = str.match(/\/d\/([a-zA-Z0-9-_]{44})/);
-  if (match) return match[1];
-  match = str.match(/\/d\/([a-zA-Z0-9-_]+)/);
-  if (match) return match[1];
-  return null;
 }
 
 /**
@@ -403,6 +366,7 @@ async function fetchSpreadsheetLive() {
     localStorage.setItem('vdt2026_custom_data', JSON.stringify(cacheObject));
     
     updateLastUpdatedDisplay(state.lastUpdated);
+    state.currentPage = 1;
     renderAll();
     showToast('Sync Complete', 'Successfully fetched and parsed the latest evaluations from Google Sheets!', 'success');
   } catch (error) {
@@ -428,7 +392,7 @@ async function fetchSpreadsheetLive() {
 }
 
 /**
- * Parses raw XLSX workbook sheets using SheetJS.
+ * Parses raw XLSX workbook sheets dynamically using SheetJS.
  */
 function parseWorkbookData(wb) {
   const parsedParticipants = [];
@@ -614,8 +578,6 @@ function changeTrack(track) {
     }
   });
   
-  document.getElementById('breadcrumbActiveTrack').innerText = 
-    track === 'SwE' ? 'All Tracks' : track === 'Web' ? 'Web Development' : track;
   document.getElementById('dashboardTitle').innerText = 
     track === 'SwE' ? 'MiniProject Evaluations' : `${track} Evaluations`;
   
@@ -623,6 +585,7 @@ function changeTrack(track) {
   document.getElementById('boardFilterSelect').value = 'all';
   
   rebuildBoardFilterDropdown();
+  state.currentPage = 1;
   renderAll();
 }
 
@@ -653,7 +616,7 @@ function rebuildBoardFilterDropdown() {
 }
 
 /**
- * Helper to check if a student belongs to the active track
+ * Helper to check if a participant belongs to the active track
  */
 function isInActiveTrack(p) {
   if (state.activeTrack === 'SwE') return true;
@@ -664,7 +627,7 @@ function isInActiveTrack(p) {
 }
 
 /**
- * Helper to calculate final score for a student based on current state (interpolated vs raw)
+ * Helper to calculate final score for a participant based on current state (interpolated vs raw)
  */
 function getParticipantScore(p, interpolate) {
   if (!p.hasGrading) return null;
@@ -683,7 +646,7 @@ function getParticipantScore(p, interpolate) {
 }
 
 /**
- * Filter and sort students in active track for evaluation
+ * Filter and sort participants in active track for evaluation
  */
 function getActiveTrackParticipants() {
   let list = state.allParticipants.filter(p => isInActiveTrack(p));
@@ -768,7 +731,7 @@ function renderMetricsTable() {
   document.getElementById('metricGradedCount').innerText = scores.length;
   
   document.getElementById('metricsFilterLabel').innerText = 
-    state.includeResigned ? 'All Students (incl. Resigned)' : 'Active Students Only';
+    state.includeResigned ? 'All Participants (incl. Resigned)' : 'Active Participants Only';
 }
 
 /**
@@ -846,7 +809,7 @@ function renderDistributionChart() {
     data: {
       labels: labels,
       datasets: [{
-        label: 'Student Count',
+        label: 'Participant Count',
         data: bins,
         backgroundColor: 'rgba(236, 114, 17, 0.75)',
         borderColor: '#ec7211',
@@ -867,31 +830,31 @@ function renderDistributionChart() {
           borderColor: colors.tooltipBorder,
           borderWidth: 1,
           cornerRadius: 6,
-          titleFont: { family: 'Inter', size: 11, weight: 'bold' },
-          bodyFont: { family: 'Inter', size: 11 },
+          titleFont: { family: 'Amazon Ember', size: 11, weight: 'bold' },
+          bodyFont: { family: 'Amazon Ember', size: 11 },
           displayColors: false,
           callbacks: {
             title: (items) => `Score: ${items[0].label}`,
-            label: (item) => `${item.raw} student(s)`
+            label: (item) => `${item.raw} participant(s)`
           }
         }
       },
       scales: {
         x: {
-          title: { display: true, text: 'Score Interval (Bin size = 1)', color: colors.text, font: { size: 9, weight: 600 } },
+          title: { display: true, text: 'Score Interval (Bin size = 1)', color: colors.text, font: { family: 'Amazon Ember', size: 9, weight: 600 } },
           grid: { display: false },
           ticks: {
             callback: function(val, idx) {
               return idx % 10 === 0 ? idx : '';
             },
             color: colors.text,
-            font: { size: 9 }
+            font: { family: 'Amazon Ember', size: 9 }
           }
         },
         y: {
-          title: { display: true, text: 'Number of Students', color: colors.text, font: { size: 9, weight: 600 } },
+          title: { display: true, text: 'Number of Participants', color: colors.text, font: { family: 'Amazon Ember', size: 9, weight: 600 } },
           grid: { color: colors.grid },
-          ticks: { precision: 0, color: colors.text, font: { size: 9 } }
+          ticks: { precision: 0, color: colors.text, font: { family: 'Amazon Ember', size: 9 } }
         }
       }
     }
@@ -959,8 +922,8 @@ function renderGraderBreakdownChart() {
           borderColor: colors.tooltipBorder,
           borderWidth: 1,
           cornerRadius: 6,
-          titleFont: { family: 'Inter', size: 11, weight: 'bold' },
-          bodyFont: { family: 'Inter', size: 11 },
+          titleFont: { family: 'Amazon Ember', size: 11, weight: 'bold' },
+          bodyFont: { family: 'Amazon Ember', size: 11 },
           displayColors: false,
           callbacks: {
             footer: () => `Total Cohort: ${totalSum}`
@@ -970,11 +933,11 @@ function renderGraderBreakdownChart() {
       scales: {
         x: {
           grid: { display: false },
-          ticks: { color: colors.text, font: { size: 9 } }
+          ticks: { color: colors.text, font: { family: 'Amazon Ember', size: 9 } }
         },
         y: {
           grid: { color: colors.grid },
-          ticks: { precision: 0, color: colors.text, font: { size: 9 } }
+          ticks: { precision: 0, color: colors.text, font: { family: 'Amazon Ember', size: 9 } }
         }
       }
     }
@@ -1051,13 +1014,13 @@ function renderGraderComparisonChart() {
           borderColor: colors.tooltipBorder,
           borderWidth: 1,
           cornerRadius: 6,
-          titleFont: { family: 'Inter', size: 11, weight: 'bold' },
-          bodyFont: { family: 'Inter', size: 11 },
+          titleFont: { family: 'Amazon Ember', size: 11, weight: 'bold' },
+          bodyFont: { family: 'Amazon Ember', size: 11 },
           displayColors: false,
           callbacks: {
             label: (item) => {
               const info = gradersList[item.dataIndex];
-              return `Avg: ${item.raw} (graded ${info.count} students)`;
+              return `Avg: ${item.raw} (graded ${info.count} participants)`;
             }
           }
         }
@@ -1065,13 +1028,13 @@ function renderGraderComparisonChart() {
       scales: {
         x: {
           grid: { display: false },
-          ticks: { color: colors.text, font: { size: 9 } }
+          ticks: { color: colors.text, font: { family: 'Amazon Ember', size: 9 } }
         },
         y: {
           min: 0,
           max: 100,
           grid: { color: colors.grid },
-          ticks: { color: colors.text, font: { size: 9 } }
+          ticks: { color: colors.text, font: { family: 'Amazon Ember', size: 9 } }
         }
       }
     }
@@ -1166,8 +1129,8 @@ function renderTimeChart() {
           borderColor: colors.tooltipBorder,
           borderWidth: 1,
           cornerRadius: 6,
-          titleFont: { family: 'Inter', size: 11, weight: 'bold' },
-          bodyFont: { family: 'Inter', size: 11 },
+          titleFont: { family: 'Amazon Ember', size: 11, weight: 'bold' },
+          bodyFont: { family: 'Amazon Ember', size: 11 },
           displayColors: false,
           callbacks: {
             label: (item) => {
@@ -1180,13 +1143,13 @@ function renderTimeChart() {
       scales: {
         x: {
           grid: { display: false },
-          ticks: { color: colors.text, font: { size: 9 } }
+          ticks: { color: colors.text, font: { family: 'Amazon Ember', size: 9 } }
         },
         y: {
           min: 0,
           max: 100,
           grid: { color: colors.grid },
-          ticks: { color: colors.text, font: { size: 9 } }
+          ticks: { color: colors.text, font: { family: 'Amazon Ember', size: 9 } }
         }
       }
     }
@@ -1205,8 +1168,39 @@ function createOrUpdateChart(id, config) {
 }
 
 /**
+ * Computes filtered participants list count (used in pagination bounding)
+ */
+function getFilteredListCount() {
+  const trackPart = getActiveTrackParticipants();
+  const searchNorm = removeDiacritics(state.searchQuery.toLowerCase());
+  
+  const filteredList = trackPart.filter(p => {
+    if (state.activeBoard !== 'all' && p.board !== state.activeBoard) {
+      return false;
+    }
+    
+    if (searchNorm !== '') {
+      const nameNorm = removeDiacritics(p.studentName.toLowerCase());
+      const phone = p.phone.toLowerCase();
+      const code = p.projectCode.toLowerCase();
+      const unit = p.mentorUnit.toLowerCase();
+      
+      const match = nameNorm.includes(searchNorm) || 
+                    phone.includes(searchNorm) || 
+                    code.includes(searchNorm) || 
+                    unit.includes(searchNorm);
+      if (!match) return false;
+    }
+    
+    return true;
+  });
+  
+  return filteredList.length;
+}
+
+/**
  * Renders ONLY the directory table.
- * Implements Dense Ranking and PERCENTRANK.INC exactly matching nocturnal16/vsd.
+ * Implements Dense Ranking, PERCENTRANK.INC, and 10-record Pagination.
  */
 function renderTableOnly() {
   const tableBody = document.getElementById('tableBody');
@@ -1281,13 +1275,31 @@ function renderTableOnly() {
   if (filteredList.length === 0) {
     tableBody.innerHTML = '';
     tableEmptyState.classList.remove('hidden');
+    document.getElementById('tablePaginationFooter').style.display = 'none';
     return;
   }
   
   tableEmptyState.classList.add('hidden');
+  document.getElementById('tablePaginationFooter').style.display = 'flex';
   
+  // Calculate total pages for 10 records pagination
+  const ITEMS_PER_PAGE = 10;
+  const totalPages = Math.ceil(filteredList.length / ITEMS_PER_PAGE) || 1;
+  
+  // Bounding currentPage state
+  if (state.currentPage > totalPages) {
+    state.currentPage = totalPages;
+  }
+  if (state.currentPage < 1) {
+    state.currentPage = 1;
+  }
+  
+  const start = (state.currentPage - 1) * ITEMS_PER_PAGE;
+  const end = start + ITEMS_PER_PAGE;
+  const pageList = filteredList.slice(start, end);
+
   let html = '';
-  filteredList.forEach(p => {
+  pageList.forEach(p => {
     const badgeClass = UNIT_BADGE_CLASSES[p.mentorUnit.toUpperCase()] || 'badge-default';
     const scoreText = p.tempScore !== null ? p.tempScore.toFixed(2) : '<span class="resigned-text">N/A (Ungraded)</span>';
     const rankText = p.rank !== null ? p.rank : '<span class="resigned-text">-</span>';
@@ -1296,7 +1308,7 @@ function renderTableOnly() {
     let noteHtml = '';
     if (p.note) {
       if (p.note.startsWith('http')) {
-        noteHtml = `<a href="${p.note}" target="_blank" class="note-link tooltip-trigger" data-tooltip="Open student folder"><i class="fa-regular fa-folder-open"></i></a>`;
+        noteHtml = `<a href="${p.note}" target="_blank" class="note-link tooltip-trigger" data-tooltip="Open participant folder"><i class="fa-regular fa-folder-open"></i></a>`;
       } else {
         noteHtml = `<span class="note-text tooltip-trigger" data-tooltip="${p.note}">${p.note}</span>`;
       }
@@ -1325,6 +1337,11 @@ function renderTableOnly() {
   });
   
   tableBody.innerHTML = html;
+  
+  // Render pagination indicator and buttons states
+  document.getElementById('paginationInfo').innerText = `Page ${state.currentPage} of ${totalPages}`;
+  document.getElementById('prevPageBtn').disabled = state.currentPage === 1;
+  document.getElementById('nextPageBtn').disabled = state.currentPage === totalPages;
 }
 
 /**
@@ -1345,7 +1362,7 @@ function showLoadingState() {
   document.getElementById('tableBody').innerHTML = `
     <tr>
       <td colspan="12" class="table-empty-state">
-        <i class="fa-solid fa-spinner fa-spin"></i> Loading student directory...
+        <i class="fa-solid fa-spinner fa-spin"></i> Loading participant directory...
       </td>
     </tr>
   `;

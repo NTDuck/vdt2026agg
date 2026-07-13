@@ -1,4 +1,4 @@
-/* AWS Theme System (Aesthetic light/dark console) */
+/* Theme System (Aesthetic light/dark console) */
 :root {
   /* Common Accent & Status colors */
   --accent-orange: #ec7211;
@@ -11,14 +11,14 @@
   --color-warning: #f89406;
   --color-danger: #df3e3e;
   
-  /* Shared layouts */
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-header: 'Outfit', var(--font-sans);
-  --font-mono: 'Source Code Pro', monospace;
+  /* Enforce Amazon Ember Web Font for everything */
+  --font-sans: 'Amazon Ember', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-header: 'Amazon Ember', var(--font-sans);
+  --font-mono: 'Amazon Ember', monospace; /* Ember no exceptions */
   
   --radius-pill: 9999px;
   --radius-card: 10px;
-  --radius-input: 9999px; /* Pill-shaped inputs */
+  --radius-input: 9999px;
 }
 
 /* Light Theme Variables */
@@ -74,10 +74,11 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  font-family: var(--font-sans) !important; /* Force font family everywhere */
 }
 
 body {
-  font-family: var(--font-sans);
+  font-family: var(--font-sans) !important;
   background-color: var(--bg-primary);
   color: var(--text-primary);
   line-height: 1.6;
@@ -102,24 +103,24 @@ body {
   background: var(--scrollbar-thumb-hover);
 }
 
-/* Layout animations */
+/* Advanced Layout Animations */
 .animate-fade-in {
-  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
+  from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes fadeInUp {
   from {
     opacity: 0;
-    transform: translateY(16px);
+    transform: translateY(20px) scale(0.98);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -139,13 +140,12 @@ body {
   padding: 6px 12px;
   border-radius: 6px;
   font-size: 0.72rem;
-  font-family: var(--font-sans);
   line-height: 1.4;
   white-space: normal;
   width: 200px;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow: 0 8px 24px rgba(0,0,0,0.25);
   z-index: 9999;
   text-align: center;
@@ -156,7 +156,7 @@ body {
   transform: translate(-50%, 0);
 }
 
-/* AWS Header Navbar */
+/* Header Navbar */
 .aws-header {
   height: 52px;
   background-color: var(--bg-tertiary);
@@ -191,7 +191,7 @@ body {
 }
 
 .aws-logo-text {
-  font-family: var(--font-header);
+  font-family: var(--font-header) !important;
   font-weight: 700;
   font-size: 1.1rem;
   color: var(--text-white);
@@ -207,67 +207,10 @@ body {
 }
 
 .project-name {
-  font-family: var(--font-header);
+  font-family: var(--font-header) !important;
   font-size: 0.95rem;
   font-weight: 600;
   color: var(--text-white);
-}
-
-.aws-header-center {
-  flex: 1;
-  max-width: 480px;
-  margin: 0 32px;
-}
-
-.aws-search-container {
-  position: relative;
-  width: 100%;
-}
-
-.aws-search-icon {
-  position: absolute;
-  left: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--text-muted);
-  font-size: 0.85rem;
-}
-
-.aws-search-container input {
-  width: 100%;
-  height: 34px;
-  background-color: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: var(--radius-pill);
-  padding: 0 40px 0 36px;
-  color: var(--text-white);
-  font-family: var(--font-sans);
-  font-size: 0.82rem;
-  transition: all 0.2s ease;
-}
-
-.aws-search-container input:focus {
-  outline: none;
-  background-color: var(--bg-primary);
-  border-color: var(--accent-orange);
-  box-shadow: 0 0 6px var(--accent-orange-glow);
-}
-
-.aws-search-shortcut {
-  position: absolute;
-  right: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  background-color: rgba(255, 255, 255, 0.15);
-  border-radius: 4px;
-  color: var(--text-muted);
-  font-size: 0.7rem;
-  width: 16px;
-  height: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-mono);
 }
 
 .aws-header-right {
@@ -287,12 +230,12 @@ body {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .theme-toggle-btn:hover {
   background: rgba(255, 255, 255, 0.08);
   border-color: var(--text-white);
-  transform: scale(1.05);
+  transform: scale(1.08);
 }
 
 .aws-user-profile {
@@ -311,9 +254,9 @@ body {
   margin-top: 52px;
 }
 
-/* AWS Buttons System - Pill Cornered */
+/* Buttons System - Pill Cornered */
 .aws-btn {
-  font-family: var(--font-sans);
+  font-family: var(--font-sans) !important;
   font-size: 0.8rem;
   font-weight: 700;
   padding: 6px 18px;
@@ -323,7 +266,7 @@ body {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   border: none;
 }
 
@@ -333,8 +276,8 @@ body {
 }
 .aws-btn-primary:hover {
   background-color: var(--accent-orange-hover);
-  box-shadow: 0 0 10px var(--accent-orange-glow);
-  transform: translateY(-1px);
+  box-shadow: 0 4px 12px var(--accent-orange-glow);
+  transform: translateY(-1.5px);
 }
 
 .aws-btn-secondary {
@@ -345,7 +288,7 @@ body {
 .aws-btn-secondary:hover {
   background-color: rgba(255, 255, 255, 0.05);
   border-color: var(--text-secondary);
-  transform: translateY(-1px);
+  transform: translateY(-1.5px);
 }
 
 /* Main Area Layout (Full Width, Centered) */
@@ -361,24 +304,6 @@ body {
   gap: 28px; /* Spacing between widgets */
 }
 
-.aws-breadcrumb-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: var(--text-muted);
-}
-
-.breadcrumb-item.id-display {
-  color: var(--accent-orange);
-  font-weight: 600;
-}
-
-.breadcrumb-separator {
-  font-size: 0.6rem;
-}
-
 .dashboard-header-row {
   display: flex;
   justify-content: space-between;
@@ -388,7 +313,7 @@ body {
 }
 
 .title-section h1 {
-  font-family: var(--font-header);
+  font-family: var(--font-header) !important;
   font-size: 1.6rem;
   font-weight: 600;
   color: var(--text-primary);
@@ -420,7 +345,7 @@ body {
   align-items: center;
 }
 
-/* Track selectorSegmented Tabs */
+/* Track selector Segmented Tabs */
 .track-tabs {
   display: flex;
   background-color: var(--bg-primary);
@@ -433,7 +358,7 @@ body {
 .track-tab {
   background: transparent;
   border: none;
-  font-family: var(--font-sans);
+  font-family: var(--font-sans) !important;
   font-size: 0.8rem;
   font-weight: 600;
   color: var(--text-secondary);
@@ -496,7 +421,7 @@ body {
 }
 
 .settings-section h3 {
-  font-family: var(--font-header);
+  font-family: var(--font-header) !important;
   font-size: 0.85rem;
   font-weight: 700;
   color: var(--text-primary);
@@ -565,12 +490,13 @@ body {
   align-items: center;
   gap: 16px;
   box-shadow: var(--card-shadow);
-  animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
-  transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.3s ease;
+  animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, background-color 0.3s ease;
 }
 .stat-card:hover {
-  transform: translateY(-2px);
+  transform: translateY(-3px) scale(1.01);
   border-color: var(--border-color-hover);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
 }
 
 /* Stagger animations */
@@ -601,7 +527,7 @@ body {
   letter-spacing: 0.5px;
 }
 .stat-value {
-  font-family: var(--font-header);
+  font-family: var(--font-header) !important;
   font-size: 1.4rem;
   font-weight: 700;
   color: var(--text-primary);
@@ -636,7 +562,7 @@ body {
   }
 }
 
-/* AWS Dashboard widget card */
+/* Dashboard widget card */
 .aws-card {
   background-color: var(--card-bg);
   border: 1px solid var(--border-color);
@@ -645,8 +571,8 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
-  transition: border-color 0.2s ease, background-color 0.3s ease;
+  animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, background-color 0.3s ease;
 }
 .aws-card:hover {
   border-color: var(--border-color-hover);
@@ -660,7 +586,7 @@ body {
   align-items: center;
 }
 .aws-card-header h2 {
-  font-family: var(--font-header);
+  font-family: var(--font-header) !important;
   font-weight: 600;
   font-size: 0.95rem;
   color: var(--text-primary);
@@ -728,14 +654,14 @@ body {
   font-size: 0.8rem;
 }
 
-/* AWS Custom Inputs - Full Rounded */
+/* Custom Inputs - Full Rounded */
 .aws-select {
   background-color: var(--bg-primary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-pill);
   padding: 6px 16px;
   color: var(--text-primary);
-  font-family: var(--font-sans);
+  font-family: var(--font-sans) !important;
   font-size: 0.82rem;
   cursor: pointer;
   outline: none;
@@ -751,7 +677,7 @@ body {
   border-radius: var(--radius-pill);
   padding: 4px 12px;
   color: var(--text-secondary);
-  font-family: var(--font-sans);
+  font-family: var(--font-sans) !important;
   font-size: 0.76rem;
   cursor: pointer;
   outline: none;
@@ -762,9 +688,19 @@ body {
   color: var(--text-primary);
 }
 
-/* Custom input pill corners override */
 .aws-input {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
   border-radius: var(--radius-input);
+  padding: 6px 16px;
+  color: var(--text-primary);
+  font-family: var(--font-sans) !important;
+  font-size: 0.82rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.aws-input:focus {
+  border-color: var(--accent-orange);
 }
 
 /* Metrics Table styles */
@@ -794,7 +730,7 @@ body {
   margin-right: 6px;
 }
 .metrics-table td.metric-val {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans) !important; /* Force Amazon Ember everywhere */
   font-weight: 700;
   color: var(--text-primary);
   text-align: right;
@@ -851,7 +787,7 @@ body {
   color: var(--text-primary);
   font-size: 0.8rem;
   width: 200px;
-  font-family: var(--font-sans);
+  font-family: var(--font-sans) !important;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   outline: none;
 }
@@ -860,7 +796,7 @@ body {
   border-color: var(--accent-orange);
 }
 
-/* AWS Table */
+/* Table styling */
 .table-wrapper {
   overflow-x: auto;
   max-height: 480px;
@@ -890,7 +826,7 @@ body {
   vertical-align: middle;
 }
 .aws-table tbody tr {
-  transition: background 0.15s ease;
+  transition: background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .aws-table tbody tr:hover {
   background-color: var(--row-hover);
@@ -898,16 +834,16 @@ body {
 
 /* Columns specifics */
 .aws-table td.rank-col {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans) !important;
   font-weight: 700;
   color: var(--accent-orange);
 }
 .aws-table td.percentile-col {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans) !important;
   color: var(--text-secondary);
 }
 .aws-table td.score-col {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans) !important;
   font-weight: 700;
   color: var(--text-primary);
   text-align: right;
@@ -915,6 +851,22 @@ body {
 .aws-table td.student-name-col {
   font-weight: 600;
   color: var(--text-primary);
+}
+
+/* Table Pagination Footer styles */
+.table-pagination-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  border-top: 1px solid var(--border-color);
+  background-color: var(--table-header-bg);
+  transition: background-color 0.3s ease;
+}
+.pagination-info {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
 }
 
 /* Badges for units */
@@ -974,7 +926,7 @@ body {
   font-size: 0.78rem;
 }
 
-/* AWS Footer global bottom bar */
+/* Footer bottom bar */
 .aws-footer-global {
   background-color: var(--bg-secondary);
   border-top: 1px solid var(--border-color);
@@ -996,9 +948,6 @@ body {
 @media (max-width: 768px) {
   .aws-main-content {
     padding: 20px;
-  }
-  .aws-header-center {
-    display: none;
   }
   .controls-toolbar {
     flex-direction: column;

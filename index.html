@@ -6,12 +6,10 @@
   <title>vdt2026agg</title>
   
   <!-- SEO Meta Tags -->
-  <meta name="description" content="A minimal console application built in AWS Console design system to aggregate and analyze the Viettel Digital Talent 2026 evaluations.">
+  <meta name="description" content="A minimal console application built to aggregate and analyze the Viettel Digital Talent 2026 evaluations.">
   
-  <!-- Google Fonts (Inter & Outfit) -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=Source+Code+Pro:wght@400;500;600&display=swap" rel="stylesheet">
+  <!-- Amazon Ember Web Font -->
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/amazon-fonts@1.0.1/fonts/stylesheet.css" />
   
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -35,24 +33,16 @@
     })();
   </script>
 
-  <!-- AWS Global Header -->
+  <!-- Global Header -->
   <header class="aws-header animate-fade-in">
     <div class="aws-header-left">
       <div class="aws-logo">
         <i class="fa-solid fa-cubes-stacked aws-logo-icon"></i>
-        <span class="aws-logo-text">AWS</span>
+        <span class="aws-logo-text">Console</span>
       </div>
       <div class="aws-project-title">
         <span class="vdt-badge">VDT 2026</span>
         <span class="project-name">Evaluations Aggregator</span>
-      </div>
-    </div>
-    
-    <div class="aws-header-center">
-      <div class="aws-search-container">
-        <i class="fa-solid fa-search aws-search-icon"></i>
-        <input type="text" id="globalSearch" placeholder="Quick find students, units, project codes...">
-        <div class="aws-search-shortcut">/</div>
       </div>
     </div>
     
@@ -67,20 +57,11 @@
     </div>
   </header>
 
-  <!-- AWS Layout Wrapper -->
+  <!-- Layout Wrapper -->
   <div class="aws-layout">
     
-    <!-- AWS Main Content Area (Full Width) -->
+    <!-- Main Content Area (Full Width) -->
     <main class="aws-main-content">
-      
-      <!-- Breadcrumb Bar -->
-      <div class="aws-breadcrumb-bar animate-fade-in">
-        <span class="breadcrumb-item">Console Home</span>
-        <i class="fa-solid fa-chevron-right breadcrumb-separator"></i>
-        <span class="breadcrumb-item">VDT Aggregator</span>
-        <i class="fa-solid fa-chevron-right breadcrumb-separator"></i>
-        <span class="breadcrumb-item id-display" id="breadcrumbActiveTrack">All Tracks</span>
-      </div>
 
       <!-- Dash Title & Sync -->
       <div class="dashboard-header-row animate-fade-in">
@@ -117,7 +98,7 @@
           
           <div class="table-search-box">
             <i class="fa-solid fa-magnifying-glass"></i>
-            <input type="text" id="tableSearch" placeholder="Filter by student name...">
+            <input type="text" id="tableSearch" placeholder="Filter by participant name...">
           </div>
           
           <button id="toggleSettingsBtn" class="aws-btn aws-btn-secondary tooltip-trigger" data-tooltip="Configure calculations & spreadsheet source">
@@ -151,8 +132,8 @@
               <label class="aws-checkbox-container">
                 <input type="checkbox" id="includeResignedCheckbox">
                 <span class="checkmark"></span>
-                <span class="checkbox-text">Include Resigned Students</span>
-                <i class="fa-solid fa-circle-info tooltip-trigger" data-tooltip="Includes resigned students (those with empty notes) in statistics calculations with a score of 0."></i>
+                <span class="checkbox-text">Include Resigned Participants</span>
+                <i class="fa-solid fa-circle-info tooltip-trigger" data-tooltip="Includes resigned participants (those with empty notes) in statistics calculations with a score of 0."></i>
               </label>
             </div>
           </div>
@@ -178,7 +159,7 @@
             <i class="fa-solid fa-users"></i>
           </div>
           <div class="stat-details">
-            <span class="stat-label">Total Students</span>
+            <span class="stat-label">Total Participants</span>
             <span class="stat-value" id="statTotalStudents">0</span>
           </div>
         </div>
@@ -187,7 +168,7 @@
             <i class="fa-solid fa-square-poll-vertical"></i>
           </div>
           <div class="stat-details">
-            <span class="stat-label">Graded Students</span>
+            <span class="stat-label">Graded Participants</span>
             <span class="stat-value" id="statGradedStudents">0</span>
           </div>
         </div>
@@ -196,7 +177,7 @@
             <i class="fa-solid fa-user-slash"></i>
           </div>
           <div class="stat-details">
-            <span class="stat-label">Resigned Students</span>
+            <span class="stat-label">Resigned Participants</span>
             <span class="stat-value" id="statResignedStudents">0</span>
           </div>
         </div>
@@ -221,7 +202,7 @@
           <div class="aws-card">
             <div class="aws-card-header">
               <h2>Score Metrics</h2>
-              <div class="card-header-badge" id="metricsFilterLabel">Active Students</div>
+              <div class="card-header-badge" id="metricsFilterLabel">Active Participants</div>
             </div>
             <div class="aws-card-body">
               <div class="metrics-table-container">
@@ -263,11 +244,11 @@
             </div>
           </div>
           
-          <!-- Student Status / Grading Member Counts Chart -->
+          <!-- Participant Status / Grading Member Counts Chart -->
           <div class="aws-card">
             <div class="aws-card-header">
               <h2>Grader Coverage</h2>
-              <i class="fa-solid fa-circle-question tooltip-trigger card-info-icon" data-tooltip="Shows breakdown of students: resigned (empty note), ungraded (e.g. HPC), or graded by 1, 2, or 3 grading members. Sum matches total students."></i>
+              <i class="fa-solid fa-circle-question tooltip-trigger card-info-icon" data-tooltip="Shows breakdown of participants: resigned (empty note), ungraded (e.g. HPC), or graded by 1, 2, or 3 grading members. Sum matches total participants."></i>
             </div>
             <div class="aws-card-body chart-card-body">
               <div class="chart-container">
@@ -346,11 +327,11 @@
         
       </div>
 
-      <!-- Bottom Section: Database Table of Students -->
+      <!-- Bottom Section: Database Table of Participants -->
       <section class="aws-card table-card">
         <div class="aws-card-header table-card-header">
           <div class="table-header-left">
-            <h2>Students Directory</h2>
+            <h2>Participants Directory</h2>
             <span class="table-count-badge" id="tableRecordCount">0 records found</span>
           </div>
         </div>
@@ -365,7 +346,7 @@
                   <th style="width: 100px;">Session</th>
                   <th style="width: 70px;">Date</th>
                   <th style="width: 110px;">Time Slot</th>
-                  <th>Student Name</th>
+                  <th>Participant Name</th>
                   <th>Phone</th>
                   <th style="width: 110px;">Project ID</th>
                   <th>Mentor Unit</th>
@@ -390,6 +371,17 @@
             <p>Try adjusting your search query, board filter, or active track.</p>
           </div>
           
+          <!-- Table Pagination Footer -->
+          <div class="table-pagination-footer" id="tablePaginationFooter">
+            <button id="prevPageBtn" class="aws-btn aws-btn-secondary tooltip-trigger" data-tooltip="Previous page">
+              <i class="fa-solid fa-chevron-left"></i> Previous
+            </button>
+            <span class="pagination-info" id="paginationInfo">Page 1 of 1</span>
+            <button id="nextPageBtn" class="aws-btn aws-btn-secondary tooltip-trigger" data-tooltip="Next page">
+              Next <i class="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
+          
         </div>
       </section>
 
@@ -397,7 +389,7 @@
   </div>
 
   <footer class="aws-footer-global">
-    <p>&copy; 2026 Viettel Digital Talent. AWS Design System.</p>
+    <p>&copy; 2026 Viettel Digital Talent.</p>
   </footer>
 
   <script src="app.js"></script>
