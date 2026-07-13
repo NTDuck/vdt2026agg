@@ -6,7 +6,7 @@
   <title>AWS Console - VDT 2026 MiniProject Aggregator</title>
   
   <!-- SEO Meta Tags -->
-  <meta name="description" content="A static console application built in AWS Console aesthetic to aggregate and analyze the Viettel Digital Talent 2026 MiniProject evaluations.">
+  <meta name="description" content="A minimal console application built in AWS Console design system to aggregate and analyze the Viettel Digital Talent 2026 evaluations.">
   
   <!-- Google Fonts (Inter & Outfit) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -26,45 +26,33 @@
 <body class="aws-dark-theme">
 
   <!-- AWS Global Header -->
-  <header class="aws-header">
+  <header class="aws-header animate-fade-in">
     <div class="aws-header-left">
       <div class="aws-logo">
         <i class="fa-solid fa-cubes-stacked aws-logo-icon"></i>
         <span class="aws-logo-text">AWS</span>
       </div>
-      <button class="aws-services-btn" id="servicesBtn">
-        <i class="fa-solid fa-bars"></i>
-        <span>Services</span>
-      </button>
       <div class="aws-project-title">
         <span class="vdt-badge">VDT 2026</span>
-        <span class="project-name">MiniProject Aggregator</span>
+        <span class="project-name">Evaluations Aggregator</span>
       </div>
     </div>
     
     <div class="aws-header-center">
       <div class="aws-search-container">
         <i class="fa-solid fa-search aws-search-icon"></i>
-        <input type="text" id="globalSearch" placeholder="Search students, units, project codes (e.g. Nguyễn Chí Công, VTNet)...">
+        <input type="text" id="globalSearch" placeholder="Search student name, phone, project code, or unit...">
         <div class="aws-search-shortcut">/</div>
       </div>
     </div>
     
     <div class="aws-header-right">
-      <div class="header-icon-btn" title="CloudShell">
-        <i class="fa-solid fa-terminal"></i>
-      </div>
-      <div class="header-icon-btn" title="Notifications">
-        <i class="fa-solid fa-bell"></i>
-        <span class="badge-dot"></span>
-      </div>
-      <div class="header-icon-btn" title="Settings">
-        <i class="fa-solid fa-gear"></i>
-      </div>
-      <div class="aws-user-profile" id="userProfileBtn">
+      <button class="theme-toggle-btn tooltip-trigger" id="themeToggleBtn" data-tooltip="Switch theme mode">
+        <i class="fa-solid fa-sun" id="themeIcon"></i>
+      </button>
+      <div class="aws-user-profile">
         <i class="fa-regular fa-user"></i>
-        <span>Admin @ ap-southeast-1</span>
-        <i class="fa-solid fa-angle-down"></i>
+        <span>Admin</span>
       </div>
     </div>
   </header>
@@ -73,19 +61,19 @@
   <div class="aws-layout">
     
     <!-- AWS Left Navigation Sidebar -->
-    <aside class="aws-sidebar">
+    <aside class="aws-sidebar animate-slide-right">
       <div class="sidebar-title">
         <i class="fa-solid fa-sliders"></i>
-        <span>Navigation & Controls</span>
+        <span>Controls</span>
       </div>
       
       <!-- Track Selector Section -->
       <div class="sidebar-group">
-        <div class="sidebar-group-title">Tracks (Active Filter)</div>
+        <div class="sidebar-group-title">Evaluation Tracks</div>
         <ul class="sidebar-menu">
           <li class="sidebar-menu-item active" data-track="SwE" id="track-SwE">
             <i class="fa-solid fa-network-wired"></i>
-            <span>SwE (All Tracks)</span>
+            <span>All Tracks</span>
           </li>
           <li class="sidebar-menu-item" data-track="System" id="track-System">
             <i class="fa-solid fa-server"></i>
@@ -97,7 +85,7 @@
           </li>
           <li class="sidebar-menu-item" data-track="HPC" id="track-HPC">
             <i class="fa-solid fa-microchip"></i>
-            <span>High Performance Computing</span>
+            <span>HPC</span>
           </li>
         </ul>
       </div>
@@ -106,39 +94,31 @@
       <div class="sidebar-group">
         <div class="sidebar-group-title">Spreadsheet Source</div>
         <div class="sidebar-config-box">
-          <label for="sheetUrlInput" class="config-label">Google Sheets URL</label>
-          <input type="text" id="sheetUrlInput" class="aws-input" placeholder="Paste Google Sheets URL here...">
+          <label for="sheetUrlInput" class="config-label">Google Sheets Link</label>
+          <input type="text" id="sheetUrlInput" class="aws-input" placeholder="Paste spreadsheet link...">
           <div class="config-buttons">
-            <button id="saveSheetUrlBtn" class="aws-btn aws-btn-primary">Apply Source</button>
-            <button id="resetSheetUrlBtn" class="aws-btn aws-btn-secondary" title="Reset to Default"><i class="fa-solid fa-rotate-left"></i></button>
+            <button id="saveSheetUrlBtn" class="aws-btn aws-btn-primary">Apply</button>
+            <button id="resetSheetUrlBtn" class="aws-btn aws-btn-secondary tooltip-trigger" data-tooltip="Reset source to default"><i class="fa-solid fa-rotate-left"></i></button>
           </div>
-          <span class="config-help">Url must be publicly viewable.</span>
         </div>
       </div>
 
       <!-- Score Manipulation Section -->
       <div class="sidebar-group">
-        <div class="sidebar-group-title">Calculation Adjustments</div>
+        <div class="sidebar-group-title">Calculations</div>
         <div class="sidebar-checkbox-group">
           <label class="aws-checkbox-container">
             <input type="checkbox" id="interpolateScoreCheckbox">
             <span class="checkmark"></span>
-            <span class="checkbox-text">Interpolate Final Score</span>
-            <i class="fa-solid fa-circle-info tooltip-icon" title="Averages scores for only the members who graded (e.g. if graded by 2 instead of 3, final score will be average of 2 instead of divided by 3)."></i>
+            <span class="checkbox-text">Interpolate Scores</span>
+            <i class="fa-solid fa-circle-info tooltip-trigger" data-tooltip="Averages evaluation scores based on actual graded members only (e.g. if graded by 2 instead of 3, final score will be average of 2 instead of divided by 3)."></i>
           </label>
           <label class="aws-checkbox-container">
             <input type="checkbox" id="includeResignedCheckbox">
             <span class="checkmark"></span>
-            <span class="checkbox-text">Include Resigned SVs</span>
-            <i class="fa-solid fa-circle-info tooltip-icon" title="Consider resigned students (those with blank 'Ghi chú') in final score metrics. They will be counted with score = 0."></i>
+            <span class="checkbox-text">Include Resigned</span>
+            <i class="fa-solid fa-circle-info tooltip-trigger" data-tooltip="Consider resigned students (those with blank 'Ghi chú') in final score metrics with a score of 0."></i>
           </label>
-        </div>
-      </div>
-      
-      <div class="sidebar-footer">
-        <div class="aws-region-info">
-          <div><span class="lbl">Account:</span> <span class="val">Viettel-VDT-2026</span></div>
-          <div><span class="lbl">Region:</span> <span class="val">ap-southeast-1 (Singapore)</span></div>
         </div>
       </div>
     </aside>
@@ -147,18 +127,18 @@
     <main class="aws-main-content">
       
       <!-- Breadcrumb Bar -->
-      <div class="aws-breadcrumb-bar">
+      <div class="aws-breadcrumb-bar animate-fade-in">
         <span class="breadcrumb-item">Console Home</span>
         <i class="fa-solid fa-chevron-right breadcrumb-separator"></i>
         <span class="breadcrumb-item">VDT Aggregator</span>
         <i class="fa-solid fa-chevron-right breadcrumb-separator"></i>
-        <span class="breadcrumb-item id-display" id="breadcrumbActiveTrack">SwE (All Tracks)</span>
+        <span class="breadcrumb-item id-display" id="breadcrumbActiveTrack">All Tracks</span>
       </div>
 
       <!-- Dash Title & Sync -->
-      <div class="dashboard-header-row">
+      <div class="dashboard-header-row animate-fade-in">
         <div class="title-section">
-          <h1 id="dashboardTitle">MiniProject Evaluations Dashboard</h1>
+          <h1 id="dashboardTitle">MiniProject Evaluations</h1>
           <span class="subtitle" id="lastUpdatedDisplay">Status: Preloaded static data</span>
         </div>
         <div class="action-section">
@@ -188,7 +168,7 @@
             <i class="fa-solid fa-users"></i>
           </div>
           <div class="stat-details">
-            <span class="stat-label">Total Participants</span>
+            <span class="stat-label">Total Students</span>
             <span class="stat-value" id="statTotalStudents">0</span>
           </div>
         </div>
@@ -197,7 +177,7 @@
             <i class="fa-solid fa-square-poll-vertical"></i>
           </div>
           <div class="stat-details">
-            <span class="stat-label">Graded (Active)</span>
+            <span class="stat-label">Graded Students</span>
             <span class="stat-value" id="statGradedStudents">0</span>
           </div>
         </div>
@@ -206,7 +186,7 @@
             <i class="fa-solid fa-user-slash"></i>
           </div>
           <div class="stat-details">
-            <span class="stat-label">Resigned (Blank Note)</span>
+            <span class="stat-label">Resigned Students</span>
             <span class="stat-value" id="statResignedStudents">0</span>
           </div>
         </div>
@@ -215,7 +195,7 @@
             <i class="fa-solid fa-graduation-cap"></i>
           </div>
           <div class="stat-details">
-            <span class="stat-label">Average Final Score</span>
+            <span class="stat-label">Average Score</span>
             <span class="stat-value" id="statAverageScore">0.00</span>
           </div>
         </div>
@@ -230,8 +210,8 @@
           <!-- Score Metrics Card -->
           <div class="aws-card">
             <div class="aws-card-header">
-              <h2>Final Score Metrics Summary</h2>
-              <div class="card-header-badge" id="metricsFilterLabel">Active SVs</div>
+              <h2>Score Metrics</h2>
+              <div class="card-header-badge" id="metricsFilterLabel">Active Students</div>
             </div>
             <div class="aws-card-body">
               <div class="metrics-table-container">
@@ -273,11 +253,11 @@
             </div>
           </div>
           
-          <!-- Participant Status / Grading Member Counts Chart -->
+          <!-- Student Status / Grading Member Counts Chart -->
           <div class="aws-card">
             <div class="aws-card-header">
-              <h2>Evaluation Breakdown by Grader Count</h2>
-              <i class="fa-solid fa-circle-question card-info-icon" title="Shows how many students are resigned (blank 'Ghi chú'), graded by 0 (HPC students or ungraded), 1, 2, or 3 grading members. When summed, matches the total participant count exactly."></i>
+              <h2>Grader Coverage</h2>
+              <i class="fa-solid fa-circle-question tooltip-trigger card-info-icon" data-tooltip="Breakdown showing students who are resigned, active with 0 evaluations (e.g. HPC), or graded by 1, 2, or 3 grading members. Sums to total student count."></i>
             </div>
             <div class="aws-card-body chart-card-body">
               <div class="chart-container">
@@ -294,16 +274,16 @@
           <!-- Score Distribution Histogram -->
           <div class="aws-card">
             <div class="aws-card-header">
-              <h2>Final Score Distribution Histogram</h2>
+              <h2>Score Distribution Histogram</h2>
               <span class="chart-subtitle">Bin size = 1, Range: 0 to 100</span>
             </div>
             <div class="aws-card-body chart-card-body">
               <div class="chart-container">
                 <canvas id="scoreHistogramChart"></canvas>
-              </div>
-              <div id="noDataHistogram" class="chart-no-data hidden">
-                <i class="fa-solid fa-chart-bar"></i>
-                <p>No score data available for the selected track.</p>
+                <div id="noDataHistogram" class="chart-no-data hidden">
+                  <i class="fa-solid fa-chart-bar"></i>
+                  <p>No score data available.</p>
+                </div>
               </div>
             </div>
           </div>
@@ -317,16 +297,16 @@
         <!-- Grader Comparison Card -->
         <div class="aws-card">
           <div class="aws-card-header">
-            <h2>Grader Average Score Comparison</h2>
-            <i class="fa-solid fa-circle-question card-info-icon" title="Compares average scores given by each unique grading member unit (e.g. VCS, VTNet, VHT, VTX) to identify grading trends (who grades high/low). Excludes empty/non-graded cells."></i>
+            <h2>Grader Average score</h2>
+            <i class="fa-solid fa-circle-question tooltip-trigger card-info-icon" data-tooltip="Compares average scores given by each unique grader unit (e.g. VCS, VTNet, VHT, VTX) to identify grading tendencies."></i>
           </div>
           <div class="aws-card-body chart-card-body">
             <div class="chart-container">
               <canvas id="graderComparisonChart"></canvas>
-            </div>
-            <div id="noDataGrader" class="chart-no-data hidden">
-              <i class="fa-solid fa-balance-scale"></i>
-              <p>No grader score comparison available for the selected track.</p>
+              <div id="noDataGrader" class="chart-no-data hidden">
+                <i class="fa-solid fa-balance-scale"></i>
+                <p>No grader score data available.</p>
+              </div>
             </div>
           </div>
         </div>
@@ -334,40 +314,40 @@
         <!-- Time Comparison Card -->
         <div class="aws-card">
           <div class="aws-card-header">
-            <h2>Temporal Score Comparison</h2>
+            <h2>Score by Time</h2>
             <div class="card-header-actions">
               <select id="timeCompareSelect" class="aws-select-sm">
-                <option value="session">Compare by Session (Sáng/Chiều)</option>
-                <option value="date">Compare by Date</option>
-                <option value="slot">Compare by Time Slot</option>
+                <option value="session">Session (Sáng/Chiều)</option>
+                <option value="date">Date</option>
+                <option value="slot">Time Slot</option>
               </select>
             </div>
           </div>
           <div class="aws-card-body chart-card-body">
             <div class="chart-container">
               <canvas id="timeComparisonChart"></canvas>
-            </div>
-            <div id="noDataTime" class="chart-no-data hidden">
-              <i class="fa-solid fa-clock"></i>
-              <p>No temporal comparison available for the selected track.</p>
+              <div id="noDataTime" class="chart-no-data hidden">
+                <i class="fa-solid fa-clock"></i>
+                <p>No temporal score data available.</p>
+              </div>
             </div>
           </div>
         </div>
         
       </div>
 
-      <!-- Bottom Section: Database Table of Participants -->
+      <!-- Bottom Section: Database Table of Students -->
       <section class="aws-card table-card">
         <div class="aws-card-header table-card-header">
           <div class="table-header-left">
-            <h2>Participants Directory</h2>
+            <h2>Students Directory</h2>
             <span class="table-count-badge" id="tableRecordCount">0 records found</span>
           </div>
           <div class="table-header-right">
             <!-- Search bar -->
             <div class="table-search-box">
               <i class="fa-solid fa-magnifying-glass"></i>
-              <input type="text" id="tableSearch" placeholder="Filter by Student Name...">
+              <input type="text" id="tableSearch" placeholder="Filter by name...">
             </div>
             <!-- Board (Sheet) filter dropdown -->
             <div class="table-filter-box">
@@ -391,7 +371,7 @@
                   <th style="width: 100px;">Time Slot</th>
                   <th>Student Name</th>
                   <th>Phone</th>
-                  <th style="width: 110px;">MiniProject ID</th>
+                  <th style="width: 110px;">Project ID</th>
                   <th>Mentor Unit</th>
                   <th>Note</th>
                   <th style="text-align: right; width: 100px;">Final Score</th>
@@ -400,7 +380,7 @@
               <tbody id="tableBody">
                 <tr>
                   <td colspan="12" class="table-empty-state">
-                    <i class="fa-solid fa-spinner fa-spin"></i> Loading participant directory...
+                    <i class="fa-solid fa-spinner fa-spin"></i> Loading directory...
                   </td>
                 </tr>
               </tbody>
@@ -410,8 +390,8 @@
           <!-- Table Empty State -->
           <div id="tableEmptyState" class="table-no-results-state hidden">
             <i class="fa-regular fa-folder-open"></i>
-            <h3>No participants match your criteria</h3>
-            <p>Try adjusting your filters, search terms, or active track.</p>
+            <h3>No matching results</h3>
+            <p>Try adjusting your search query, board filter, or active track.</p>
           </div>
           
         </div>
@@ -421,7 +401,7 @@
   </div>
 
   <footer class="aws-footer-global">
-    <p>&copy; 2026 Viettel Digital Talent. Built in AWS Console Design Aesthetic.</p>
+    <p>&copy; 2026 Viettel Digital Talent. AWS Design System.</p>
   </footer>
 
   <script src="app.js"></script>

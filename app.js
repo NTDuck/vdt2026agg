@@ -1,5 +1,5 @@
 /**
- * AWS Console Aesthetic - VDT 2026 MiniProject Aggregator
+ * AWS Console Aesthetic - VDT 2026 MiniProject evaluations Aggregator
  * Client-side script handling data loading, parsing, adjustments, charts, and table rendering.
  */
 
@@ -11,12 +11,13 @@ const DEFAULT_SPREADSHEET_URL = `https://docs.google.com/spreadsheets/d/${DEFAUL
 const state = {
   spreadsheetId: DEFAULT_SPREADSHEET_ID,
   spreadsheetUrl: DEFAULT_SPREADSHEET_URL,
-  allParticipants: [], // Raw list parsed from Excel
+  allParticipants: [], // Raw student list parsed from Excel
   activeTrack: 'SwE',  // active track filter: 'SwE' (All), 'System', 'Web', 'HPC'
-  activeBoard: 'all',  // board (sheet name) filter: 'all' or e.g. 'System 1'
+  activeBoard: 'all',  // board (sheet name) filter: 'all' or specific sheet
   searchQuery: '',     // search query string
   interpolateScore: false,
   includeResigned: false,
+  theme: 'dark',       // Default theme, will be adjusted dynamically
   charts: {},          // ChartJS instances
   lastUpdated: ''
 };
@@ -48,7 +49,7 @@ async function initApp() {
   // Pre-fill Spreadsheet URL input field
   document.getElementById('sheetUrlInput').value = state.spreadsheetUrl;
   
-  // Load initial dataset (prefer custom cached data, then pre-compiled static JSON, then fetch live)
+  // Load initial dataset (prefer cache, then pre-compiled static JSON, then fetch live)
   await loadInitialData();
 }
 
@@ -56,11 +57,19 @@ async function initApp() {
  * Setup Event Listeners for interactive controls.
  */
 function setupEventListeners() {
+  // Theme Toggle Button
+  const themeToggleBtn = document.getElementById('themeToggleBtn');
+  themeToggleBtn.addEventListener('click', () => {
+    state.theme = state.theme === 'dark' ? 'light' : 'dark';
+    applyTheme(state.theme);
+    saveSettings();
+    renderAll(); // Re-render to update ChartJS colors!
+  });
+
   // Track sidebar menu items
   const menuItems = document.querySelectorAll('.sidebar-menu-item');
   menuItems.forEach(item => {
     item.addEventListener('click', (e) => {
-      // Toggle active classes
       menuItems.forEach(el => el.classList.remove('active'));
       const li = e.currentTarget;
       li.classList.add('active');
@@ -89,7 +98,6 @@ function setupEventListeners() {
   const tableSearch = document.getElementById('tableSearch');
   tableSearch.addEventListener('input', (e) => {
     state.searchQuery = e.target.value;
-    // Sync with global header search bar
     document.getElementById('globalSearch').value = state.searchQuery;
     renderTableOnly();
   });
@@ -98,12 +106,11 @@ function setupEventListeners() {
   const globalSearch = document.getElementById('globalSearch');
   globalSearch.addEventListener('input', (e) => {
     state.searchQuery = e.target.value;
-    // Sync with table search bar
     document.getElementById('tableSearch').value = state.searchQuery;
     renderTableOnly();
   });
 
-  // Keyboard shortcut for search (focusing search when "/" is pressed)
+  // Keyboard shortcut for search ("/" key)
   document.addEventListener('keydown', (e) => {
     if (e.key === '/' && document.activeElement !== globalSearch && document.activeElement !== tableSearch) {
       e.preventDefault();
@@ -133,7 +140,6 @@ function setupEventListeners() {
     state.spreadsheetUrl = inputVal.includes('docs.google.com') ? inputVal : `https://docs.google.com/spreadsheets/d/${extractedId}/edit`;
     saveSettings();
     
-    // Fetch and parse live spreadsheet data
     fetchSpreadsheetLive();
   });
 
@@ -172,6 +178,30 @@ function setupEventListeners() {
 }
 
 /**
+ * Apply the selected theme to the body and update UI icons.
+ */
+function applyTheme(theme) {
+  document.body.className = theme === 'dark' ? 'aws-dark-theme' : 'aws-light-theme';
+  const themeIcon = document.getElementById('themeIcon');
+  if (theme === 'dark') {
+    themeIcon.className = 'fa-solid fa-sun';
+  } else {
+    themeIcon.className = 'fa-solid fa-moon';
+  }
+}
+
+/**
+ * Returns grid and text colors for ChartJS depending on the active theme mode.
+ */
+function getChartThemeColors() {
+  const isDark = state.theme === 'dark';
+  return {
+    grid: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
+    text: isDark ? '#94a3b8' : '#545b64'
+  };
+}
+
+/**
  * Load settings from localStorage
  */
 function loadSavedSettings() {
@@ -179,6 +209,7 @@ function loadSavedSettings() {
   const savedUrl = localStorage.getItem('vdt2026_sheet_url');
   const savedInterpolate = localStorage.getItem('vdt2026_interpolate');
   const savedIncludeResigned = localStorage.getItem('vdt2026_include_resigned');
+  const savedTheme = localStorage.getItem('vdt2026_theme');
   
   if (savedId) state.spreadsheetId = savedId;
   if (savedUrl) state.spreadsheetUrl = savedUrl;
@@ -191,6 +222,11 @@ function loadSavedSettings() {
     state.includeResigned = savedIncludeResigned === 'true';
     document.getElementById('includeResignedCheckbox').checked = state.includeResigned;
   }
+  
+  // Theme initialization: local storage -> browser setting -> default dark
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  state.theme = savedTheme || (prefersDark ? 'dark' : 'light');
+  applyTheme(state.theme);
 }
 
 /**
@@ -201,6 +237,7 @@ function saveSettings() {
   localStorage.setItem('vdt2026_sheet_url', state.spreadsheetUrl);
   localStorage.setItem('vdt2026_interpolate', state.interpolateScore);
   localStorage.setItem('vdt2026_include_resigned', state.includeResigned);
+  localStorage.setItem('vdt2026_theme', state.theme);
 }
 
 /**
@@ -219,12 +256,10 @@ function getSpreadsheetId(urlOrId) {
 
 /**
  * Load initial data.
- * Checks localStorage cache first, falls back to pre-compiled static JSON, and then attempts live fetch if both fail.
  */
 async function loadInitialData() {
   showLoadingState();
   
-  // 1. Try local storage cache
   const cachedData = localStorage.getItem('vdt2026_custom_data');
   if (cachedData) {
     try {
@@ -241,7 +276,6 @@ async function loadInitialData() {
     }
   }
 
-  // 2. Try loading preloaded data.json
   try {
     const response = await fetch('data.json');
     if (response.ok) {
@@ -257,12 +291,11 @@ async function loadInitialData() {
     console.error('Failed to fetch data.json, attempting live spreadsheet load...', e);
   }
 
-  // 3. Force live fetch from Google Sheet
   fetchSpreadsheetLive();
 }
 
 /**
- * Live fetches Excel file from Google Sheet, parses sheets using SheetJS, caches results, and updates UI.
+ * Live fetches Excel file from Google Sheet, parses sheets, and updates UI.
  */
 async function fetchSpreadsheetLive() {
   showLoadingState();
@@ -280,10 +313,8 @@ async function fetchSpreadsheetLive() {
     const arrayBuffer = await response.arrayBuffer();
     const workbook = XLSX.read(arrayBuffer, { type: 'array', cellDates: true });
     
-    // Parse the parsed workbook sheets into state.allParticipants
     parseWorkbookData(workbook);
     
-    // Cache successfully parsed data to localStorage
     state.lastUpdated = `Synced live at ${new Date().toLocaleTimeString()} on ${new Date().toLocaleDateString()}`;
     const cacheObject = {
       all_participants: state.allParticipants,
@@ -296,9 +327,8 @@ async function fetchSpreadsheetLive() {
     showToast('Sync Complete', 'Successfully fetched and parsed the latest evaluations from Google Sheets!', 'success');
   } catch (error) {
     console.error('Error fetching live spreadsheet:', error);
-    showToast('Sync Failed', `Could not connect to Google Sheets. Please check your URL/permissions. Error: ${error.message}`, 'danger');
+    showToast('Sync Failed', `Could not connect to Google Sheets. Please check your URL. Error: ${error.message}`, 'danger');
     
-    // Revert loading UI if we have data to display
     if (state.allParticipants.length > 0) {
       renderAll();
     } else {
@@ -319,30 +349,24 @@ async function fetchSpreadsheetLive() {
 
 /**
  * Parses raw XLSX workbook sheets using SheetJS.
- * Replicates the parsing logic from parse_data.py on client side.
  */
 function parseWorkbookData(wb) {
   const parsedParticipants = [];
-  
-  // Filter active sheets starting with System, Web, or HPC
   const activeSheets = wb.SheetNames.filter(name => 
     name.startsWith('System') || name.startsWith('Web') || name.startsWith('HPC')
   );
   
   activeSheets.forEach(sheetName => {
     const sheet = wb.Sheets[sheetName];
-    // Convert sheet to 2D array of rows
     const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null });
     if (rows.length < 2) return;
     
     const row0 = rows[0];
     const headers = rows[1];
     
-    // Determine whether this sheet contains grading columns
     const finalIdx = headers.indexOf('Final Score');
     const hasGrading = headers.length >= 31 && finalIdx !== -1;
     
-    // Grader Names are in row 0 at index 9, 16, 23
     let grader1Name = "Grader 1";
     let grader2Name = "Grader 2";
     let grader3Name = "Grader 3";
@@ -353,17 +377,14 @@ function parseWorkbookData(wb) {
       if (row0.length > 23 && row0[23]) grader3Name = String(row0[23]).trim();
     }
     
-    // Process participant rows
     for (let r = 2; r < rows.length; r++) {
       const row = rows[r];
-      // Skip empty rows or rows without student names (index 4)
       if (!row || row.length < 5 || !row[4] || String(row[4]).trim() === '') continue;
       
       const board = row[0] ? String(row[0]).trim() : sheetName;
       let session = row[1] ? String(row[1]).trim() : '';
-      if (session === 'Chiểu') session = 'Chiều'; // Fix accents typo
+      if (session === 'Chiểu') session = 'Chiều';
       
-      // Date formatting
       let dateStr = '';
       const dateVal = row[2];
       if (dateVal instanceof Date) {
@@ -371,7 +392,7 @@ function parseWorkbookData(wb) {
         let month = String(dateVal.getMonth() + 1).padStart(2, '0');
         dateStr = `${day}/${month}`;
       } else if (dateVal) {
-        dateStr = String(dateVal).trim().split(' ')[0]; // clean time stamp
+        dateStr = String(dateVal).trim().split(' ')[0];
         let parts = dateStr.split('-');
         if (parts.length === 3) {
           dateStr = `${parts[2]}/${parts[1]}`;
@@ -381,7 +402,6 @@ function parseWorkbookData(wb) {
       const timeSlot = row[3] ? String(row[3]).trim() : '';
       const studentName = String(row[4]).trim();
       
-      // Phone number formatting
       let phoneStr = '';
       const phoneVal = row[5];
       if (phoneVal) {
@@ -394,7 +414,6 @@ function parseWorkbookData(wb) {
         }
       }
       
-      // Project Code
       let projectCode = '';
       if (row.length > 6 && row[6] !== null) {
         projectCode = String(row[6]).trim();
@@ -422,20 +441,16 @@ function parseWorkbookData(wb) {
       };
       
       if (hasGrading) {
-        // Helper to check if a cell is filled
         const isFilled = c => c !== null && c !== undefined && String(c).trim() !== '';
 
-        // Grader 1
         const g1_criteria = [row[9], row[10], row[11], row[12], row[13], row[14]];
         const g1_total = row[15];
         const g1_graded = g1_criteria.some(isFilled);
         
-        // Grader 2
         const g2_criteria = [row[16], row[17], row[18], row[19], row[20], row[21]];
         const g2_total = row[22];
         const g2_graded = g2_criteria.some(isFilled);
         
-        // Grader 3
         const g3_criteria = [row[23], row[24], row[25], row[26], row[27], row[28]];
         const g3_total = row[29];
         const g3_graded = g3_criteria.some(isFilled);
@@ -466,22 +481,18 @@ function parseWorkbookData(wb) {
 }
 
 /**
- * Changes active track. Triggered when clicking track sidebar items.
+ * Changes active track.
  */
 function changeTrack(track) {
   state.activeTrack = track;
-  state.activeBoard = 'all'; // reset board filter on track change
+  state.activeBoard = 'all';
   
-  // Update breadcrumb and page headers
   document.getElementById('breadcrumbActiveTrack').innerText = 
-    track === 'SwE' ? 'SwE (All Tracks)' : track === 'Web' ? 'Web Development' : track;
+    track === 'SwE' ? 'All Tracks' : track === 'Web' ? 'Web Development' : track;
   document.getElementById('dashboardTitle').innerText = 
-    track === 'SwE' ? 'MiniProject Evaluations Dashboard' : `${track} Evaluation Dashboard`;
+    track === 'SwE' ? 'MiniProject Evaluations' : `${track} Evaluations`;
   
-  // Rebuild the Board Filter dropdown dynamically based on the boards in the selected track
   rebuildBoardFilterDropdown();
-  
-  // Re-render dashboard widgets, charts, and table
   renderAll();
 }
 
@@ -492,7 +503,6 @@ function rebuildBoardFilterDropdown() {
   const boardFilterSelect = document.getElementById('boardFilterSelect');
   boardFilterSelect.innerHTML = '<option value="all">All Boards</option>';
   
-  // Gather unique board names for current track
   const activeBoards = new Set();
   state.allParticipants.forEach(p => {
     if (isInActiveTrack(p)) {
@@ -500,9 +510,7 @@ function rebuildBoardFilterDropdown() {
     }
   });
   
-  // Sort alphabetically
   const sortedBoards = Array.from(activeBoards).sort((a, b) => {
-    // Treat numeric endings correctly (e.g. System 2 before System 10)
     return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
   });
   
@@ -515,7 +523,7 @@ function rebuildBoardFilterDropdown() {
 }
 
 /**
- * Helper to check if a participant belongs to the active track
+ * Helper to check if a student belongs to the active track
  */
 function isInActiveTrack(p) {
   if (state.activeTrack === 'SwE') return true;
@@ -526,17 +534,16 @@ function isInActiveTrack(p) {
 }
 
 /**
- * Helper to calculate final score for a participant based on current state (interpolated vs raw)
+ * Helper to calculate final score for a student based on current state (interpolated vs raw)
  */
 function getParticipantScore(p, interpolate) {
   if (!p.hasGrading) return null;
   if (p.isResigned) return 0.0;
   
   if (!interpolate) {
-    return p.finalScore; // Raw final score from sheet
+    return p.finalScore;
   }
   
-  // Interpolated: Average of actual grader totals who graded the participant
   const gradedScores = p.graders.filter(g => g.graded).map(g => g.total);
   if (gradedScores.length === 0) return 0.0;
   
@@ -545,13 +552,11 @@ function getParticipantScore(p, interpolate) {
 }
 
 /**
- * Filter and sort participants in active track for evaluation (used in stats and table ranking)
+ * Filter and sort students in active track for evaluation
  */
 function getActiveTrackParticipants() {
-  // Get all participants in active track
   let list = state.allParticipants.filter(p => isInActiveTrack(p));
   
-  // Calculate temporary scores based on current interpolate setting
   list.forEach(p => {
     p.tempScore = getParticipantScore(p, state.interpolateScore);
   });
@@ -568,19 +573,12 @@ function renderAll() {
     return;
   }
 
-  // 1. Calculate stats and render quick stats card banners
   renderQuickStats();
-
-  // 2. Render Score Metrics summary card
   renderMetricsTable();
-
-  // 3. Render charts
   renderDistributionChart();
   renderGraderBreakdownChart();
   renderGraderComparisonChart();
   renderTimeChart();
-
-  // 4. Render participants directory table
   renderTableOnly();
 }
 
@@ -590,13 +588,10 @@ function renderAll() {
 function renderQuickStats() {
   const participants = state.allParticipants.filter(p => isInActiveTrack(p));
   const total = participants.length;
-  
   const resigned = participants.filter(p => p.isResigned).length;
   
-  // Active means graded by at least 1 member (or is HPC track student - count as active/graded? In VDT, HPC students don't have grades yet but are active)
   const graded = participants.filter(p => p.hasGrading ? p.graderCount > 0 : !p.isResigned).length;
   
-  // Average Score of active track
   const gradedPart = participants.filter(p => {
     let s = getParticipantScore(p, state.interpolateScore);
     return s !== null && (state.includeResigned || !p.isResigned);
@@ -620,18 +615,16 @@ function renderQuickStats() {
 function renderMetricsTable() {
   const participants = getActiveTrackParticipants();
   
-  // Filter scores considering 'includeResigned' setting
   const scores = participants
     .filter(p => {
-      if (p.tempScore === null) return false; // Exclude ungraded (like HPC)
-      if (!state.includeResigned && p.isResigned) return false; // Exclude resigned if toggle off
+      if (p.tempScore === null) return false;
+      if (!state.includeResigned && p.isResigned) return false;
       return true;
     })
     .map(p => p.tempScore);
     
   const stats = calculateStats(scores);
   
-  // Render
   document.getElementById('metricMean').innerText = stats.mean.toFixed(2);
   document.getElementById('metricMax').innerText = stats.max.toFixed(2);
   document.getElementById('metricMedian').innerText = stats.median.toFixed(2);
@@ -644,7 +637,7 @@ function renderMetricsTable() {
   document.getElementById('metricGradedCount').innerText = scores.length;
   
   document.getElementById('metricsFilterLabel').innerText = 
-    state.includeResigned ? 'All SVs (incl. Resigned)' : 'Active SVs Only';
+    state.includeResigned ? 'All Students (incl. Resigned)' : 'Active Students Only';
 }
 
 /**
@@ -664,7 +657,6 @@ function calculateStats(scores) {
   const sum = sorted.reduce((a, b) => a + b, 0);
   const mean = sum / n;
   
-  // Median
   let median = 0;
   if (n % 2 === 1) {
     median = sorted[Math.floor(n / 2)];
@@ -672,11 +664,9 @@ function calculateStats(scores) {
     median = (sorted[n / 2 - 1] + sorted[n / 2]) / 2;
   }
   
-  // Variance & StdDev
   const variance = sorted.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / n;
   const std = Math.sqrt(variance);
   
-  // Percentile helper
   function getPercentile(arr, p) {
     const idx = (arr.length - 1) * p;
     const lower = Math.floor(idx);
@@ -698,8 +688,8 @@ function calculateStats(scores) {
  */
 function renderDistributionChart() {
   const participants = getActiveTrackParticipants();
+  const colors = getChartThemeColors();
   
-  // Filter active scores (exclude HPC/resigned if applicable)
   const scores = participants
     .filter(p => {
       if (p.tempScore === null) return false;
@@ -712,15 +702,14 @@ function renderDistributionChart() {
   const noDataEl = document.getElementById('noDataHistogram');
   
   if (scores.length === 0) {
-    document.getElementById(canvasId).style.display = 'none';
+    document.getElementById(canvasId).style.visibility = 'hidden';
     noDataEl.classList.remove('hidden');
     return;
   } else {
-    document.getElementById(canvasId).style.display = 'block';
+    document.getElementById(canvasId).style.visibility = 'visible';
     noDataEl.classList.add('hidden');
   }
 
-  // Count frequencies in bins of size 1 (0 to 100)
   const bins = Array(101).fill(0);
   scores.forEach(s => {
     const rounded = Math.min(100, Math.max(0, Math.floor(s)));
@@ -757,20 +746,20 @@ function renderDistributionChart() {
       },
       scales: {
         x: {
-          title: { display: true, text: 'Score Interval (Bin size = 1)', color: '#94a3b8', font: { size: 10 } },
+          title: { display: true, text: 'Score Interval (Bin size = 1)', color: colors.text, font: { size: 9, weight: 600 } },
           grid: { display: false },
           ticks: {
             callback: function(val, idx) {
               return idx % 10 === 0 ? idx : '';
             },
-            color: '#94a3b8',
-            font: { size: 10 }
+            color: colors.text,
+            font: { size: 9 }
           }
         },
         y: {
-          title: { display: true, text: 'Number of Students', color: '#94a3b8', font: { size: 10 } },
-          grid: { color: 'rgba(255,255,255,0.06)' },
-          ticks: { precision: 0, color: '#94a3b8', font: { size: 10 } }
+          title: { display: true, text: 'Number of Students', color: colors.text, font: { size: 9, weight: 600 } },
+          grid: { color: colors.grid },
+          ticks: { precision: 0, color: colors.text, font: { size: 9 } }
         }
       }
     }
@@ -779,10 +768,10 @@ function renderDistributionChart() {
 
 /**
  * Chart 2: Grader Count Breakdown (Resigned, Graded by 0, 1, 2, 3)
- * Total sum is equal to the total number of track participants.
  */
 function renderGraderBreakdownChart() {
   const participants = getActiveTrackParticipants();
+  const colors = getChartThemeColors();
   
   const counts = { resigned: 0, g0: 0, g1: 0, g2: 0, g3: 0 };
   participants.forEach(p => {
@@ -805,20 +794,20 @@ function renderGraderBreakdownChart() {
     type: 'bar',
     data: {
       labels: [
-        'Resigned (Blank Note)',
-        'Graded by 0 Members',
-        'Graded by 1 Grader',
-        'Graded by 2 Graders',
-        'Graded by 3 Graders'
+        'Resigned',
+        'Ungraded (0)',
+        '1 Grader',
+        '2 Graders',
+        '3 Graders'
       ],
       datasets: [{
         data: [counts.resigned, counts.g0, counts.g1, counts.g2, counts.g3],
         backgroundColor: [
-          'rgba(223, 62, 62, 0.75)',   // Red for resigned
-          'rgba(100, 116, 139, 0.75)', // Gray for 0
-          'rgba(248, 148, 6, 0.75)',   // Amber for 1
-          'rgba(0, 115, 187, 0.75)',   // Blue for 2
-          'rgba(46, 168, 90, 0.75)'    // Green for 3
+          'rgba(223, 62, 62, 0.75)',   // Red
+          'rgba(100, 116, 139, 0.72)', // Gray
+          'rgba(248, 148, 6, 0.75)',   // Amber
+          'rgba(0, 115, 187, 0.75)',   // Blue
+          'rgba(46, 168, 90, 0.75)'    // Green
         ],
         borderColor: [
           '#df3e3e', '#64748b', '#f89406', '#0073bb', '#2ea85a'
@@ -833,18 +822,18 @@ function renderGraderBreakdownChart() {
         legend: { display: false },
         tooltip: {
           callbacks: {
-            footer: () => `Total Participants: ${totalSum}`
+            footer: () => `Total Cohort: ${totalSum}`
           }
         }
       },
       scales: {
         x: {
           grid: { display: false },
-          ticks: { color: '#94a3b8', font: { size: 10 } }
+          ticks: { color: colors.text, font: { size: 9 } }
         },
         y: {
-          grid: { color: 'rgba(255,255,255,0.06)' },
-          ticks: { precision: 0, color: '#94a3b8', font: { size: 10 } }
+          grid: { color: colors.grid },
+          ticks: { precision: 0, color: colors.text, font: { size: 9 } }
         }
       }
     }
@@ -852,13 +841,13 @@ function renderGraderBreakdownChart() {
 }
 
 /**
- * Chart 3: Grader Comparison Chart (Average score given by each unique grader unit)
+ * Chart 3: Grader Comparison Chart
  */
 function renderGraderComparisonChart() {
   const participants = getActiveTrackParticipants();
+  const colors = getChartThemeColors();
   
-  // Calculate average score given by each unique grader unit
-  const graderScores = {}; // { graderName: { sum: 0, count: 0 } }
+  const graderScores = {};
   
   participants.forEach(p => {
     if (!p.hasGrading || p.isResigned) return;
@@ -878,15 +867,14 @@ function renderGraderComparisonChart() {
 
   const graderNames = Object.keys(graderScores);
   if (graderNames.length === 0) {
-    document.getElementById(canvasId).style.display = 'none';
+    document.getElementById(canvasId).style.visibility = 'hidden';
     noDataEl.classList.remove('hidden');
     return;
   } else {
-    document.getElementById(canvasId).style.display = 'block';
+    document.getElementById(canvasId).style.visibility = 'visible';
     noDataEl.classList.add('hidden');
   }
 
-  // Map to list, compute averages, and sort by average score descending
   const gradersList = graderNames.map(name => ({
     name: name,
     avg: graderScores[name].sum / graderScores[name].count,
@@ -900,7 +888,7 @@ function renderGraderComparisonChart() {
       datasets: [{
         label: 'Average Score Given',
         data: gradersList.map(g => g.avg.toFixed(2)),
-        backgroundColor: 'rgba(0, 115, 187, 0.75)', // AWS blue
+        backgroundColor: 'rgba(0, 115, 187, 0.75)',
         borderColor: '#0073bb',
         borderWidth: 1
       }]
@@ -922,13 +910,13 @@ function renderGraderComparisonChart() {
       scales: {
         x: {
           grid: { display: false },
-          ticks: { color: '#94a3b8', font: { size: 10 } }
+          ticks: { color: colors.text, font: { size: 9 } }
         },
         y: {
           min: 0,
           max: 100,
-          grid: { color: 'rgba(255,255,255,0.06)' },
-          ticks: { color: '#94a3b8', font: { size: 10 } }
+          grid: { color: colors.grid },
+          ticks: { color: colors.text, font: { size: 9 } }
         }
       }
     }
@@ -936,12 +924,12 @@ function renderGraderComparisonChart() {
 }
 
 /**
- * Chart 4: Temporal Score Comparison (comparing average scores by Session, Date, or Time Slot)
+ * Chart 4: Temporal Score Comparison
  */
 function renderTimeChart() {
   const participants = getActiveTrackParticipants();
+  const colors = getChartThemeColors();
   
-  // Filter active graded participants (exclude resigned / ungraded)
   const gradedPart = participants.filter(p => 
     p.tempScore !== null && !p.isResigned
   );
@@ -950,18 +938,16 @@ function renderTimeChart() {
   const noDataEl = document.getElementById('noDataTime');
 
   if (gradedPart.length === 0) {
-    document.getElementById(canvasId).style.display = 'none';
+    document.getElementById(canvasId).style.visibility = 'hidden';
     noDataEl.classList.remove('hidden');
     return;
   } else {
-    document.getElementById(canvasId).style.display = 'block';
+    document.getElementById(canvasId).style.visibility = 'visible';
     noDataEl.classList.add('hidden');
   }
 
-  // Get selected grouping mode
   const compareBy = document.getElementById('timeCompareSelect').value;
-  
-  const groups = {}; // { groupName: { sum: 0, count: 0 } }
+  const groups = {};
   
   gradedPart.forEach(p => {
     let key = '';
@@ -982,10 +968,8 @@ function renderTimeChart() {
 
   const keys = Object.keys(groups);
   
-  // Sort keys chronological/alphabetical
   keys.sort((a, b) => {
     if (compareBy === 'session') {
-      // Sáng first, Chiều second
       if (a === 'Sáng') return -1;
       if (b === 'Sáng') return 1;
       return a.localeCompare(b);
@@ -1005,7 +989,7 @@ function renderTimeChart() {
       labels: chartData.map(d => d.label),
       datasets: [{
         data: chartData.map(d => d.avg.toFixed(2)),
-        backgroundColor: 'rgba(46, 168, 90, 0.75)', // Green
+        backgroundColor: 'rgba(46, 168, 90, 0.75)',
         borderColor: '#2ea85a',
         borderWidth: 1
       }]
@@ -1027,13 +1011,13 @@ function renderTimeChart() {
       scales: {
         x: {
           grid: { display: false },
-          ticks: { color: '#94a3b8', font: { size: 10 } }
+          ticks: { color: colors.text, font: { size: 9 } }
         },
         y: {
           min: 0,
           max: 100,
-          grid: { color: 'rgba(255,255,255,0.06)' },
-          ticks: { color: '#94a3b8', font: { size: 10 } }
+          grid: { color: colors.grid },
+          ticks: { color: colors.text, font: { size: 9 } }
         }
       }
     }
@@ -1041,7 +1025,7 @@ function renderTimeChart() {
 }
 
 /**
- * Creates a new chart or destroys the previous instance if it already exists, avoiding canvas reuse bugs.
+ * Creates a new chart or destroys the previous instance if it already exists.
  */
 function createOrUpdateChart(id, config) {
   if (state.charts[id]) {
@@ -1052,28 +1036,20 @@ function createOrUpdateChart(id, config) {
 }
 
 /**
- * Renders ONLY the participants directory table.
- * Separated to handle fast table filtering/searching without rebuilding heavy charts.
+ * Renders ONLY the directory table.
  */
 function renderTableOnly() {
   const tableBody = document.getElementById('tableBody');
   const tableEmptyState = document.getElementById('tableEmptyState');
   
-  // 1. Get track participants
   const trackPart = getActiveTrackParticipants();
   
-  // 2. Rank participants on the ENTIRE active track before applying search / board filters
-  // This ensures ranks are absolute within their track, rather than local to search results
-  
-  // Filter for those who have evaluation scores
   const gradedPart = trackPart.filter(p => 
     p.tempScore !== null && (state.includeResigned || !p.isResigned)
   );
   
-  // Sort graded descending
   gradedPart.sort((a, b) => b.tempScore - a.tempScore);
   
-  // Assign ranks (handle ties)
   let currentRank = 0;
   let lastScore = -1;
   gradedPart.forEach((p, idx) => {
@@ -1085,7 +1061,6 @@ function renderTableOnly() {
     p.percentile = ((currentRank / gradedPart.length) * 100).toFixed(1);
   });
   
-  // Set rank as N/A for ungraded/resigned if they were excluded
   trackPart.forEach(p => {
     const isEvaluated = gradedPart.includes(p);
     if (!isEvaluated) {
@@ -1094,27 +1069,20 @@ function renderTableOnly() {
     }
   });
   
-  // 3. Sort active track participants based on rank (highest score first)
-  // Those with N/A score/rank go to the bottom
   const sortedTrackPart = [...trackPart].sort((a, b) => {
     if (a.tempScore === null && b.tempScore === null) return 0;
     if (a.tempScore === null) return 1;
     if (b.tempScore === null) return -1;
-    
-    // Sort by score descending
     return b.tempScore - a.tempScore;
   });
 
-  // 4. Apply Board (sheet) filter and Search query
   const searchNorm = removeDiacritics(state.searchQuery.toLowerCase());
   
   const filteredList = sortedTrackPart.filter(p => {
-    // Board filter
     if (state.activeBoard !== 'all' && p.board !== state.activeBoard) {
       return false;
     }
     
-    // Search query (Student name, phone, project code, or mentor unit)
     if (searchNorm !== '') {
       const nameNorm = removeDiacritics(p.studentName.toLowerCase());
       const phone = p.phone.toLowerCase();
@@ -1131,10 +1099,8 @@ function renderTableOnly() {
     return true;
   });
 
-  // Render Table Records count
   document.getElementById('tableRecordCount').innerText = `${filteredList.length} records found`;
 
-  // Render rows
   if (filteredList.length === 0) {
     tableBody.innerHTML = '';
     tableEmptyState.classList.remove('hidden');
@@ -1150,11 +1116,10 @@ function renderTableOnly() {
     const rankText = p.rank !== null ? p.rank : '<span class="resigned-text">-</span>';
     const pctText = p.percentile !== null ? `Top ${p.percentile}%` : '<span class="resigned-text">-</span>';
     
-    // Build Ghi chú / Note column
     let noteHtml = '';
     if (p.note) {
       if (p.note.startsWith('http')) {
-        noteHtml = `<a href="${p.note}" target="_blank" class="note-link" title="Open attachment"><i class="fa-regular fa-folder-open"></i></a>`;
+        noteHtml = `<a href="${p.note}" target="_blank" class="note-link tooltip-trigger" data-tooltip="Open student drive folder"><i class="fa-regular fa-folder-open"></i></a>`;
       } else {
         noteHtml = `<span class="note-text" title="${p.note}">${p.note}</span>`;
       }
@@ -1187,7 +1152,6 @@ function renderTableOnly() {
 
 /**
  * Normalizes Vietnamese text by stripping accents and diacritics.
- * Crucial for intuitive Vietnamese diacritics-insensitive search.
  */
 function removeDiacritics(str) {
   if (!str) return '';
@@ -1204,7 +1168,7 @@ function showLoadingState() {
   document.getElementById('tableBody').innerHTML = `
     <tr>
       <td colspan="12" class="table-empty-state">
-        <i class="fa-solid fa-spinner fa-spin"></i> Fetching evaluations and compiling results...
+        <i class="fa-solid fa-spinner fa-spin"></i> Loading student directory...
       </td>
     </tr>
   `;
@@ -1219,7 +1183,7 @@ function updateLastUpdatedDisplay(text) {
 }
 
 /**
- * Toast/Alert system. Renders AWS Alert banners at the top of content.
+ * Toast/Alert system.
  */
 function showToast(title, desc, type = 'info') {
   const toast = document.getElementById('toastAlert');
@@ -1227,7 +1191,7 @@ function showToast(title, desc, type = 'info') {
   const tDesc = document.getElementById('alertDesc');
   const tIcon = document.getElementById('alertIcon');
   
-  toast.className = 'aws-alert'; // reset classes
+  toast.className = 'aws-alert';
   
   if (type === 'success') {
     toast.classList.add('alert-success');
@@ -1245,10 +1209,8 @@ function showToast(title, desc, type = 'info') {
   tTitle.innerText = title;
   tDesc.innerText = desc;
   
-  // Scroll to alert
   toast.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   
-  // Auto dismiss after 6 seconds for success/info, keep danger
   if (type !== 'danger') {
     setTimeout(() => {
       toast.classList.add('hidden');
