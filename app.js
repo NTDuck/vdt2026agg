@@ -441,23 +441,46 @@ function parseWorkbookData(wb) {
     const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null });
     if (rows.length < 2) return;
     
-    const row0 = rows[0];
-    const headers = rows[1];
+    // Find the header row dynamically by searching for the "Họ tên SV" column
+    let headerRowIdx = -1;
+    for (let i = 0; i < Math.min(10, rows.length); i++) {
+      const r = rows[i];
+      if (r && r.some(cell => cell && String(cell).trim() === 'Họ tên SV')) {
+        headerRowIdx = i;
+        break;
+      }
+    }
     
-    const finalIdx = headers.indexOf('Final Score');
-    const hasGrading = finalIdx !== -1; // Robust check: only check presence of Final Score
+    if (headerRowIdx === -1) {
+      console.warn(`Could not find header row in sheet ${sheetName}`);
+      return;
+    }
+    
+    const headers = rows[headerRowIdx];
+    const row0 = headerRowIdx > 0 ? rows[headerRowIdx - 1] : [];
+    
+    const finalIdx = headers.findIndex(h => h && String(h).trim().toLowerCase() === 'final score');
+    const hasGrading = finalIdx !== -1;
     
     let grader1Name = "Grader 1";
     let grader2Name = "Grader 2";
     let grader3Name = "Grader 3";
     
-    if (hasGrading) {
-      if (row0.length > 9 && row0[9]) grader1Name = String(row0[9]).trim();
-      if (row0.length > 16 && row0[16]) grader2Name = String(row0[16]).trim();
-      if (row0.length > 23 && row0[23]) grader3Name = String(row0[23]).trim();
+    // Find grader total columns ('Tổng kết') dynamically
+    const totalIndices = [];
+    headers.forEach((h, idx) => {
+      if (h && String(h).trim() === 'Tổng kết') {
+        totalIndices.push(idx);
+      }
+    });
+    
+    if (hasGrading && totalIndices.length >= 3) {
+      if (row0.length > totalIndices[0] - 6 && row0[totalIndices[0] - 6]) grader1Name = String(row0[totalIndices[0] - 6]).trim();
+      if (row0.length > totalIndices[1] - 6 && row0[totalIndices[1] - 6]) grader2Name = String(row0[totalIndices[1] - 6]).trim();
+      if (row0.length > totalIndices[2] - 6 && row0[totalIndices[2] - 6]) grader3Name = String(row0[totalIndices[2] - 6]).trim();
     }
     
-    for (let r = 2; r < rows.length; r++) {
+    for (let r = headerRowIdx + 1; r < rows.length; r++) {
       const row = rows[r];
       if (!row || row.length < 5 || !row[4] || String(row[4]).trim() === '') continue;
       
@@ -524,33 +547,34 @@ function parseWorkbookData(wb) {
         hasGrading: hasGrading
       };
       
-      if (hasGrading) {
-        // Conforming to vsd company score validation rules:
-        // A grader's evaluation is valid ONLY if all 6 criteria fields are numeric.
-        const g1_criteria = [row[9], row[10], row[11], row[12], row[13], row[14]];
+      if (hasGrading && totalIndices.length >= 3) {
+        const idx1 = totalIndices[0];
+        const g1_criteria = row.slice(idx1 - 6, idx1);
         const g1_graded = g1_criteria.every(isNumeric);
         let g1_total = null;
         if (g1_graded) {
-          g1_total = isNumeric(row[15]) ? parseFloat(row[15]) : g1_criteria.reduce((s, c) => s + parseFloat(c), 0);
+          g1_total = isNumeric(row[idx1]) ? parseFloat(row[idx1]) : g1_criteria.reduce((s, c) => s + parseFloat(c), 0);
         }
         
-        const g2_criteria = [row[16], row[17], row[18], row[19], row[20], row[21]];
+        const idx2 = totalIndices[1];
+        const g2_criteria = row.slice(idx2 - 6, idx2);
         const g2_graded = g2_criteria.every(isNumeric);
         let g2_total = null;
         if (g2_graded) {
-          g2_total = isNumeric(row[22]) ? parseFloat(row[22]) : g2_criteria.reduce((s, c) => s + parseFloat(c), 0);
+          g2_total = isNumeric(row[idx2]) ? parseFloat(row[idx2]) : g2_criteria.reduce((s, c) => s + parseFloat(c), 0);
         }
         
-        const g3_criteria = [row[23], row[24], row[25], row[26], row[27], row[28]];
+        const idx3 = totalIndices[2];
+        const g3_criteria = row.slice(idx3 - 6, idx3);
         const g3_graded = g3_criteria.every(isNumeric);
         let g3_total = null;
         if (g3_graded) {
-          g3_total = isNumeric(row[29]) ? parseFloat(row[29]) : g3_criteria.reduce((s, c) => s + parseFloat(c), 0);
+          g3_total = isNumeric(row[idx3]) ? parseFloat(row[idx3]) : g3_criteria.reduce((s, c) => s + parseFloat(c), 0);
         }
         
         const graderCount = [g1_graded, g2_graded, g3_graded].filter(Boolean).length;
         
-        let finalScore = parseFloat(row[30]);
+        let finalScore = parseFloat(row[finalIdx]);
         if (isNaN(finalScore)) finalScore = 0.0;
         
         participant.graderCount = graderCount;
