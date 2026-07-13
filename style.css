@@ -3,7 +3,7 @@
   /* Common Accent & Status colors */
   --accent-orange: #ec7211;
   --accent-orange-hover: #dd6b10;
-  --accent-orange-glow: rgba(236, 114, 17, 0.3);
+  --accent-orange-glow: rgba(236, 114, 17, 0.25);
   --accent-blue: #0073bb;
   --accent-blue-hover: #008cd6;
   
@@ -17,15 +17,15 @@
   --font-mono: 'Source Code Pro', monospace;
   
   --radius-pill: 9999px;
-  --radius-card: 8px;
-  --radius-input: 20px;
+  --radius-card: 10px;
+  --radius-input: 9999px; /* Pill-shaped inputs */
 }
 
 /* Light Theme Variables */
 .aws-light-theme {
   --bg-primary: #f2f3f3;
   --bg-secondary: #ffffff;
-  --bg-tertiary: #19222d; /* Classic dark-blue header */
+  --bg-tertiary: #19222d;
   
   --text-primary: #16191f;
   --text-secondary: #545b64;
@@ -35,7 +35,7 @@
   --border-color: #eaeded;
   --border-color-hover: #d5dbdb;
   --card-bg: #ffffff;
-  --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.02);
+  --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.01);
   --table-header-bg: #eaeded;
   --row-hover: #f1f6f6;
   --scrollbar-thumb: #cdd2d2;
@@ -106,24 +106,12 @@ body {
 .animate-fade-in {
   animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
-.animate-slide-right {
-  animation: slideRight 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
-@keyframes slideRight {
-  from {
-    opacity: 0;
-    transform: translateX(-16px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
+
 @keyframes fadeInUp {
   from {
     opacity: 0;
@@ -138,7 +126,6 @@ body {
 /* Custom Styled Tooltips */
 .tooltip-trigger {
   position: relative;
-  cursor: help;
 }
 .tooltip-trigger::after {
   content: attr(data-tooltip);
@@ -149,8 +136,8 @@ body {
   background-color: var(--bg-tertiary);
   color: var(--text-white);
   border: 1px solid var(--border-color);
-  padding: 6px 10px;
-  border-radius: 4px;
+  padding: 6px 12px;
+  border-radius: 6px;
   font-size: 0.72rem;
   font-family: var(--font-sans);
   line-height: 1.4;
@@ -159,7 +146,7 @@ body {
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
   z-index: 9999;
   text-align: center;
   font-weight: 500;
@@ -305,6 +292,7 @@ body {
 .theme-toggle-btn:hover {
   background: rgba(255, 255, 255, 0.08);
   border-color: var(--text-white);
+  transform: scale(1.05);
 }
 
 .aws-user-profile {
@@ -323,204 +311,19 @@ body {
   margin-top: 52px;
 }
 
-/* AWS Sidebar (Controls Panel) */
-.aws-sidebar {
-  width: 250px;
-  background-color: var(--bg-secondary);
-  border-right: 1px solid var(--border-color);
-  padding: 24px 0;
-  display: flex;
-  flex-direction: column;
-  flex-shrink: 0;
-  position: fixed;
-  top: 52px;
-  bottom: 36px;
-  left: 0;
-  overflow-y: auto;
-  z-index: 100;
-  transition: background-color 0.3s ease;
-}
-
-.sidebar-title {
-  padding: 0 20px 16px 20px;
-  font-family: var(--font-header);
-  font-weight: 700;
-  font-size: 0.95rem;
-  color: var(--text-primary);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border-bottom: 1px solid var(--border-color);
-  margin-bottom: 16px;
-}
-
-.sidebar-group {
-  margin-bottom: 24px;
-}
-
-.sidebar-group-title {
-  padding: 0 20px 8px 20px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.sidebar-menu-item {
-  padding: 8px 20px;
-  font-size: 0.82rem;
-  font-weight: 500;
-  color: var(--text-secondary);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  border-left: 3px solid transparent;
-}
-
-.sidebar-menu-item:hover {
-  background: var(--bg-primary);
-  color: var(--text-primary);
-}
-
-.sidebar-menu-item.active {
-  background: rgba(236, 114, 17, 0.07);
-  color: var(--accent-orange);
-  border-left-color: var(--accent-orange);
-  font-weight: 600;
-}
-
-.sidebar-menu-item i {
-  font-size: 0.95rem;
-  width: 16px;
-  text-align: center;
-}
-
-/* Sidebar Config box */
-.sidebar-config-box {
-  padding: 8px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.config-label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-}
-
-.aws-input {
-  width: 100%;
-  background-color: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-input);
-  padding: 6px 14px;
-  color: var(--text-primary);
-  font-family: var(--font-sans);
-  font-size: 0.78rem;
-  transition: border-color 0.15s ease;
-}
-.aws-input:focus {
-  outline: none;
-  border-color: var(--accent-orange);
-}
-
-.config-buttons {
-  display: flex;
-  gap: 8px;
-}
-
-/* Checkbox Groups */
-.sidebar-checkbox-group {
-  padding: 4px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.aws-checkbox-container {
-  display: flex;
-  align-items: center;
-  position: relative;
-  padding-left: 26px;
-  cursor: pointer;
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: var(--text-secondary);
-  user-select: none;
-}
-
-.aws-checkbox-container input {
-  position: absolute;
-  opacity: 0;
-  cursor: pointer;
-  height: 0;
-  width: 0;
-}
-
-.checkmark {
-  position: absolute;
-  top: 2px;
-  left: 0;
-  height: 14px;
-  width: 14px;
-  background-color: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  border-radius: 3px;
-  transition: all 0.15s ease;
-}
-
-.aws-checkbox-container input:checked ~ .checkmark {
-  background-color: var(--accent-orange);
-  border-color: var(--accent-orange);
-}
-
-.checkmark:after {
-  content: "";
-  position: absolute;
-  display: none;
-}
-
-.aws-checkbox-container input:checked ~ .checkmark:after {
-  display: block;
-}
-
-.aws-checkbox-container .checkmark:after {
-  left: 4px;
-  top: 1px;
-  width: 3px;
-  height: 7px;
-  border: solid white;
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
-}
-
-.checkbox-text {
-  flex: 1;
-}
-
-.tooltip-icon {
-  color: var(--text-muted);
-  font-size: 0.72rem;
-  margin-left: 6px;
-}
-
 /* AWS Buttons System - Pill Cornered */
 .aws-btn {
   font-family: var(--font-sans);
   font-size: 0.8rem;
   font-weight: 700;
-  padding: 6px 16px;
+  padding: 6px 18px;
   border-radius: var(--radius-pill);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  gap: 8px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   border: none;
 }
 
@@ -542,18 +345,20 @@ body {
 .aws-btn-secondary:hover {
   background-color: rgba(255, 255, 255, 0.05);
   border-color: var(--text-secondary);
+  transform: translateY(-1px);
 }
 
-/* Main Area Layout */
+/* Main Area Layout (Full Width, Centered) */
 .aws-main-content {
   flex: 1;
-  padding: 32px; /* Abundant spacing */
-  margin-left: 250px;
+  padding: 32px 40px; /* Abundant spacing */
+  margin: 0 auto;
   margin-bottom: 36px;
-  width: calc(100% - 250px);
+  max-width: 1280px;
+  width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 28px; /* Large space between sections */
+  gap: 28px; /* Spacing between widgets */
 }
 
 .aws-breadcrumb-bar {
@@ -593,6 +398,128 @@ body {
 .title-section .subtitle {
   font-size: 0.8rem;
   color: var(--text-muted);
+}
+
+/* Unified Controls Toolbar */
+.controls-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-card);
+  padding: 12px 20px;
+  box-shadow: var(--card-shadow);
+  flex-wrap: wrap;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.toolbar-left {
+  display: flex;
+  align-items: center;
+}
+
+/* Track selectorSegmented Tabs */
+.track-tabs {
+  display: flex;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-pill);
+  padding: 3px;
+  gap: 2px;
+}
+
+.track-tab {
+  background: transparent;
+  border: none;
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  padding: 6px 18px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.track-tab:hover {
+  color: var(--text-primary);
+}
+
+.track-tab.active {
+  background-color: var(--accent-orange);
+  color: var(--text-white);
+  box-shadow: 0 2px 8px var(--accent-orange-glow);
+}
+
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* Collapsible Settings Drawer */
+.settings-panel {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-card);
+  box-shadow: var(--card-shadow);
+  transition: max-height 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease, padding 0.3s ease, margin 0.3s ease;
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  padding: 0 24px;
+  margin-top: -12px; /* Pull closer to toolbar */
+  margin-bottom: 0;
+}
+
+.settings-panel:not(.collapsed) {
+  max-height: 500px;
+  opacity: 1;
+  padding: 24px;
+  margin-top: 0;
+  margin-bottom: 8px;
+}
+
+.settings-panel-content {
+  display: flex;
+  gap: 32px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.settings-section {
+  flex: 1;
+  min-width: 280px;
+}
+
+.settings-section h3 {
+  font-family: var(--font-header);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.spreadsheet-config {
+  display: flex;
+  gap: 8px;
+}
+
+.settings-separator {
+  width: 1px;
+  background-color: var(--border-color);
+  align-self: stretch;
+}
+
+.checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 /* Alerts System */
@@ -639,7 +566,7 @@ body {
   gap: 16px;
   box-shadow: var(--card-shadow);
   animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
-  transition: transform 0.2s ease, border-color 0.2s ease;
+  transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.3s ease;
 }
 .stat-card:hover {
   transform: translateY(-2px);
@@ -812,6 +739,7 @@ body {
   font-size: 0.82rem;
   cursor: pointer;
   outline: none;
+  transition: border-color 0.15s;
 }
 .aws-select:focus {
   border-color: var(--accent-orange);
@@ -827,10 +755,16 @@ body {
   font-size: 0.76rem;
   cursor: pointer;
   outline: none;
+  transition: border-color 0.15s;
 }
 .aws-select-sm:focus {
   border-color: var(--accent-orange);
   color: var(--text-primary);
+}
+
+/* Custom input pill corners override */
+.aws-input {
+  border-radius: var(--radius-input);
 }
 
 /* Metrics Table styles */
@@ -897,6 +831,7 @@ body {
   flex-wrap: wrap;
 }
 
+/* Toolbar search elements */
 .table-search-box {
   position: relative;
 }
@@ -917,21 +852,12 @@ body {
   font-size: 0.8rem;
   width: 200px;
   font-family: var(--font-sans);
-  transition: all 0.2s ease;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   outline: none;
 }
 .table-search-box input:focus {
-  width: 240px;
+  width: 260px;
   border-color: var(--accent-orange);
-}
-
-.table-filter-box {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-  font-weight: 600;
 }
 
 /* AWS Table */
@@ -1068,15 +994,24 @@ body {
 
 /* Responsive collapse rules */
 @media (max-width: 768px) {
-  .aws-sidebar {
-    display: none;
-  }
   .aws-main-content {
-    margin-left: 0;
-    width: 100%;
     padding: 20px;
   }
   .aws-header-center {
     display: none;
+  }
+  .controls-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .toolbar-right {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .table-search-box input {
+    width: 100%;
+  }
+  .table-search-box input:focus {
+    width: 100%;
   }
 }

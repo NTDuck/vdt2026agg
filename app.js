@@ -1,6 +1,7 @@
 /**
- * AWS Console Aesthetic - VDT 2026 MiniProject evaluations Aggregator
+ * AWS Console Aesthetic - VDT 2026 MiniProject Evaluations Aggregator
  * Client-side script handling data loading, parsing, adjustments, charts, and table rendering.
+ * Conforms mathematically to nocturnal16/vsd (PERCENTILE.INC, PERCENTRANK.INC, and Dense Ranking).
  */
 
 // Configuration
@@ -34,6 +35,73 @@ const UNIT_BADGE_CLASSES = {
   'VAI': 'badge-vai'
 };
 
+// ==========================================================================
+// MATHEMATICAL ENGINES (Conforming to Excel / vsd)
+// ==========================================================================
+
+/**
+ * Returns true if the value represents a valid numeric score (ignores empty strings and whitespace)
+ */
+function isNumeric(val) {
+  if (val === null || val === undefined) return false;
+  const str = String(val).trim();
+  if (str === '') return false;
+  const num = Number(str);
+  return !isNaN(num) && isFinite(num);
+}
+
+/**
+ * Emulates Excel/Google Sheets PERCENTILE.INC
+ * Returns the p-th percentile of a sorted ascending array of numbers.
+ */
+function percentileInc(arr, p) {
+  if (!arr || arr.length === 0) return 0;
+  if (arr.length === 1) return arr[0];
+  if (p <= 0) return arr[0];
+  if (p >= 1) return arr[arr.length - 1];
+
+  const idx = p * (arr.length - 1);
+  const floor = Math.floor(idx);
+  const ceil = Math.ceil(idx);
+
+  if (floor === ceil) {
+    return arr[floor];
+  }
+  return arr[floor] + (idx - floor) * (arr[ceil] - arr[floor]);
+}
+
+/**
+ * Emulates Excel/Google Sheets PERCENTRANK.INC
+ * Returns the percentile rank of value x in a sorted ascending array of numbers.
+ * Appropriately averages duplicated values and interpolates intermediate values.
+ */
+function percentRankInc(arr, x) {
+  const N = arr.length;
+  if (N === 0) return 0;
+  if (N === 1) return 1.0;
+
+  if (x <= arr[0]) return 0.0;
+  if (x >= arr[N - 1]) return 1.0;
+
+  // Check for exact matching values
+  const firstIdx = arr.indexOf(x);
+  if (firstIdx !== -1) {
+    const lastIdx = arr.lastIndexOf(x);
+    // If duplicates exist, average their index positions
+    return (firstIdx + lastIdx) / (2 * (N - 1));
+  }
+
+  // Interpolate if value lies between elements
+  for (let i = 0; i < N - 1; i++) {
+    if (x > arr[i] && x < arr[i + 1]) {
+      const r_i = percentRankInc(arr, arr[i]);
+      const r_i1 = percentRankInc(arr, arr[i + 1]);
+      return r_i + ((x - arr[i]) / (arr[i + 1] - arr[i])) * (r_i1 - r_i);
+    }
+  }
+  return 0.0;
+}
+
 // Entry point
 document.addEventListener('DOMContentLoaded', () => {
   initApp();
@@ -63,23 +131,31 @@ function setupEventListeners() {
     state.theme = state.theme === 'dark' ? 'light' : 'dark';
     applyTheme(state.theme);
     saveSettings();
-    renderAll(); // Re-render to update ChartJS colors!
+    renderAll(); // Re-render to update ChartJS colors and tooltips!
   });
 
-  // Track sidebar menu items
-  const menuItems = document.querySelectorAll('.sidebar-menu-item');
-  menuItems.forEach(item => {
-    item.addEventListener('click', (e) => {
-      menuItems.forEach(el => el.classList.remove('active'));
-      const li = e.currentTarget;
-      li.classList.add('active');
+  // Track tabs selector
+  const trackTabs = document.querySelectorAll('.track-tab');
+  trackTabs.forEach(tab => {
+    tab.addEventListener('click', (e) => {
+      trackTabs.forEach(el => el.classList.remove('active'));
+      const btn = e.currentTarget;
+      btn.classList.add('active');
       
-      const track = li.getAttribute('data-track');
+      const track = btn.getAttribute('data-track');
       changeTrack(track);
     });
   });
 
-  // Checkboxes
+  // Toggle Settings panel button
+  const toggleSettingsBtn = document.getElementById('toggleSettingsBtn');
+  const settingsPanel = document.getElementById('settingsPanel');
+  toggleSettingsBtn.addEventListener('click', () => {
+    const isCollapsed = settingsPanel.classList.toggle('collapsed');
+    toggleSettingsBtn.classList.toggle('active', !isCollapsed);
+  });
+
+  // Checkboxes inside settings panel
   const interpolateCheckbox = document.getElementById('interpolateScoreCheckbox');
   interpolateCheckbox.addEventListener('change', (e) => {
     state.interpolateScore = e.target.checked;
@@ -94,7 +170,7 @@ function setupEventListeners() {
     renderAll();
   });
 
-  // Search input in table header
+  // Search input in toolbar
   const tableSearch = document.getElementById('tableSearch');
   tableSearch.addEventListener('input', (e) => {
     state.searchQuery = e.target.value;
@@ -191,13 +267,17 @@ function applyTheme(theme) {
 }
 
 /**
- * Returns grid and text colors for ChartJS depending on the active theme mode.
+ * Returns grid and text colors, and custom tooltip colors for ChartJS depending on theme.
  */
 function getChartThemeColors() {
   const isDark = state.theme === 'dark';
   return {
     grid: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
-    text: isDark ? '#94a3b8' : '#545b64'
+    text: isDark ? '#94a3b8' : '#545b64',
+    tooltipBg: isDark ? '#1b2430' : '#ffffff',
+    tooltipTitle: isDark ? '#ffffff' : '#16191f',
+    tooltipBody: isDark ? '#e2e8f0' : '#545b64',
+    tooltipBorder: isDark ? 'rgba(255, 255, 255, 0.1)' : '#eaeded'
   };
 }
 
@@ -365,7 +445,7 @@ function parseWorkbookData(wb) {
     const headers = rows[1];
     
     const finalIdx = headers.indexOf('Final Score');
-    const hasGrading = headers.length >= 31 && finalIdx !== -1;
+    const hasGrading = finalIdx !== -1; // Robust check: only check presence of Final Score
     
     let grader1Name = "Grader 1";
     let grader2Name = "Grader 2";
@@ -383,7 +463,11 @@ function parseWorkbookData(wb) {
       
       const board = row[0] ? String(row[0]).trim() : sheetName;
       let session = row[1] ? String(row[1]).trim() : '';
+      
+      // Normalize and translate session name to English
       if (session === 'Chiểu') session = 'Chiều';
+      if (session === 'Sáng') session = 'Morning';
+      if (session === 'Chiều') session = 'Afternoon';
       
       let dateStr = '';
       const dateVal = row[2];
@@ -441,19 +525,28 @@ function parseWorkbookData(wb) {
       };
       
       if (hasGrading) {
-        const isFilled = c => c !== null && c !== undefined && String(c).trim() !== '';
-
+        // Conforming to vsd company score validation rules:
+        // A grader's evaluation is valid ONLY if all 6 criteria fields are numeric.
         const g1_criteria = [row[9], row[10], row[11], row[12], row[13], row[14]];
-        const g1_total = row[15];
-        const g1_graded = g1_criteria.some(isFilled);
+        const g1_graded = g1_criteria.every(isNumeric);
+        let g1_total = null;
+        if (g1_graded) {
+          g1_total = isNumeric(row[15]) ? parseFloat(row[15]) : g1_criteria.reduce((s, c) => s + parseFloat(c), 0);
+        }
         
         const g2_criteria = [row[16], row[17], row[18], row[19], row[20], row[21]];
-        const g2_total = row[22];
-        const g2_graded = g2_criteria.some(isFilled);
+        const g2_graded = g2_criteria.every(isNumeric);
+        let g2_total = null;
+        if (g2_graded) {
+          g2_total = isNumeric(row[22]) ? parseFloat(row[22]) : g2_criteria.reduce((s, c) => s + parseFloat(c), 0);
+        }
         
         const g3_criteria = [row[23], row[24], row[25], row[26], row[27], row[28]];
-        const g3_total = row[29];
-        const g3_graded = g3_criteria.some(isFilled);
+        const g3_graded = g3_criteria.every(isNumeric);
+        let g3_total = null;
+        if (g3_graded) {
+          g3_total = isNumeric(row[29]) ? parseFloat(row[29]) : g3_criteria.reduce((s, c) => s + parseFloat(c), 0);
+        }
         
         const graderCount = [g1_graded, g2_graded, g3_graded].filter(Boolean).length;
         
@@ -463,9 +556,9 @@ function parseWorkbookData(wb) {
         participant.graderCount = graderCount;
         participant.finalScore = finalScore;
         participant.graders = [
-          { name: grader1Name, total: parseFloat(g1_total) || 0.0, graded: g1_graded, criteria: g1_criteria },
-          { name: grader2Name, total: parseFloat(g2_total) || 0.0, graded: g2_graded, criteria: g2_criteria },
-          { name: grader3Name, total: parseFloat(g3_total) || 0.0, graded: g3_graded, criteria: g3_criteria }
+          { name: grader1Name, total: g1_total || 0.0, graded: g1_graded, criteria: g1_criteria },
+          { name: grader2Name, total: g2_total || 0.0, graded: g2_graded, criteria: g2_criteria },
+          { name: grader3Name, total: g3_total || 0.0, graded: g3_graded, criteria: g3_criteria }
         ];
       } else {
         participant.graderCount = 0;
@@ -487,10 +580,23 @@ function changeTrack(track) {
   state.activeTrack = track;
   state.activeBoard = 'all';
   
+  // Sync the track tabs active state
+  const trackTabs = document.querySelectorAll('.track-tab');
+  trackTabs.forEach(tab => {
+    if (tab.getAttribute('data-track') === track) {
+      tab.classList.add('active');
+    } else {
+      tab.classList.remove('active');
+    }
+  });
+  
   document.getElementById('breadcrumbActiveTrack').innerText = 
     track === 'SwE' ? 'All Tracks' : track === 'Web' ? 'Web Development' : track;
   document.getElementById('dashboardTitle').innerText = 
     track === 'SwE' ? 'MiniProject Evaluations' : `${track} Evaluations`;
+  
+  // Reset the Board filter element to All Boards
+  document.getElementById('boardFilterSelect').value = 'all';
   
   rebuildBoardFilterDropdown();
   renderAll();
@@ -544,6 +650,7 @@ function getParticipantScore(p, interpolate) {
     return p.finalScore;
   }
   
+  // Interpolated: Average of only valid evaluations (matches vsd score formula)
   const gradedScores = p.graders.filter(g => g.graded).map(g => g.total);
   if (gradedScores.length === 0) return 0.0;
   
@@ -641,7 +748,7 @@ function renderMetricsTable() {
 }
 
 /**
- * Performs statistical computations on a list of numeric scores
+ * Performs statistical computations on a list of numeric scores conforming to vsd percentileInc
  */
 function calculateStats(scores) {
   if (scores.length === 0) {
@@ -657,28 +764,15 @@ function calculateStats(scores) {
   const sum = sorted.reduce((a, b) => a + b, 0);
   const mean = sum / n;
   
-  let median = 0;
-  if (n % 2 === 1) {
-    median = sorted[Math.floor(n / 2)];
-  } else {
-    median = (sorted[n / 2 - 1] + sorted[n / 2]) / 2;
-  }
+  const median = percentileInc(sorted, 0.5);
   
   const variance = sorted.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / n;
   const std = Math.sqrt(variance);
   
-  function getPercentile(arr, p) {
-    const idx = (arr.length - 1) * p;
-    const lower = Math.floor(idx);
-    const upper = Math.ceil(idx);
-    const weight = idx - lower;
-    return arr[lower] * (1 - weight) + arr[upper] * weight;
-  }
-  
-  const p25 = getPercentile(sorted, 0.25);
-  const p75 = getPercentile(sorted, 0.75);
-  const p90 = getPercentile(sorted, 0.90);
-  const p95 = getPercentile(sorted, 0.95);
+  const p25 = percentileInc(sorted, 0.25);
+  const p75 = percentileInc(sorted, 0.75);
+  const p90 = percentileInc(sorted, 0.90);
+  const p95 = percentileInc(sorted, 0.95);
   
   return { mean, max, median, min, std, p25, p75, p90, p95 };
 }
@@ -704,6 +798,11 @@ function renderDistributionChart() {
   if (scores.length === 0) {
     document.getElementById(canvasId).style.visibility = 'hidden';
     noDataEl.classList.remove('hidden');
+    // Destroy previous instance to avoid visual glitches and hover callbacks on empty grids
+    if (state.charts[canvasId]) {
+      state.charts[canvasId].destroy();
+      state.charts[canvasId] = null;
+    }
     return;
   } else {
     document.getElementById(canvasId).style.visibility = 'visible';
@@ -738,6 +837,15 @@ function renderDistributionChart() {
       plugins: {
         legend: { display: false },
         tooltip: {
+          backgroundColor: colors.tooltipBg,
+          titleColor: colors.tooltipTitle,
+          bodyColor: colors.tooltipBody,
+          borderColor: colors.tooltipBorder,
+          borderWidth: 1,
+          cornerRadius: 6,
+          titleFont: { family: 'Inter', size: 11, weight: 'bold' },
+          bodyFont: { family: 'Inter', size: 11 },
+          displayColors: false,
           callbacks: {
             title: (items) => `Score: ${items[0].label}`,
             label: (item) => `${item.raw} student(s)`
@@ -821,6 +929,15 @@ function renderGraderBreakdownChart() {
       plugins: {
         legend: { display: false },
         tooltip: {
+          backgroundColor: colors.tooltipBg,
+          titleColor: colors.tooltipTitle,
+          bodyColor: colors.tooltipBody,
+          borderColor: colors.tooltipBorder,
+          borderWidth: 1,
+          cornerRadius: 6,
+          titleFont: { family: 'Inter', size: 11, weight: 'bold' },
+          bodyFont: { family: 'Inter', size: 11 },
+          displayColors: false,
           callbacks: {
             footer: () => `Total Cohort: ${totalSum}`
           }
@@ -869,6 +986,11 @@ function renderGraderComparisonChart() {
   if (graderNames.length === 0) {
     document.getElementById(canvasId).style.visibility = 'hidden';
     noDataEl.classList.remove('hidden');
+    // Destroy previous instance to avoid visual glitches
+    if (state.charts[canvasId]) {
+      state.charts[canvasId].destroy();
+      state.charts[canvasId] = null;
+    }
     return;
   } else {
     document.getElementById(canvasId).style.visibility = 'visible';
@@ -899,6 +1021,15 @@ function renderGraderComparisonChart() {
       plugins: {
         legend: { display: false },
         tooltip: {
+          backgroundColor: colors.tooltipBg,
+          titleColor: colors.tooltipTitle,
+          bodyColor: colors.tooltipBody,
+          borderColor: colors.tooltipBorder,
+          borderWidth: 1,
+          cornerRadius: 6,
+          titleFont: { family: 'Inter', size: 11, weight: 'bold' },
+          bodyFont: { family: 'Inter', size: 11 },
+          displayColors: false,
           callbacks: {
             label: (item) => {
               const info = gradersList[item.dataIndex];
@@ -940,6 +1071,11 @@ function renderTimeChart() {
   if (gradedPart.length === 0) {
     document.getElementById(canvasId).style.visibility = 'hidden';
     noDataEl.classList.remove('hidden');
+    // Destroy previous instance to avoid visual glitches
+    if (state.charts[canvasId]) {
+      state.charts[canvasId].destroy();
+      state.charts[canvasId] = null;
+    }
     return;
   } else {
     document.getElementById(canvasId).style.visibility = 'visible';
@@ -970,8 +1106,8 @@ function renderTimeChart() {
   
   keys.sort((a, b) => {
     if (compareBy === 'session') {
-      if (a === 'Sáng') return -1;
-      if (b === 'Sáng') return 1;
+      if (a === 'Morning') return -1;
+      if (b === 'Morning') return 1;
       return a.localeCompare(b);
     }
     return a.localeCompare(b, undefined, { numeric: true });
@@ -1000,6 +1136,15 @@ function renderTimeChart() {
       plugins: {
         legend: { display: false },
         tooltip: {
+          backgroundColor: colors.tooltipBg,
+          titleColor: colors.tooltipTitle,
+          bodyColor: colors.tooltipBody,
+          borderColor: colors.tooltipBorder,
+          borderWidth: 1,
+          cornerRadius: 6,
+          titleFont: { family: 'Inter', size: 11, weight: 'bold' },
+          bodyFont: { family: 'Inter', size: 11 },
+          displayColors: false,
           callbacks: {
             label: (item) => {
               const info = chartData[item.dataIndex];
@@ -1037,6 +1182,7 @@ function createOrUpdateChart(id, config) {
 
 /**
  * Renders ONLY the directory table.
+ * Implements Dense Ranking and PERCENTRANK.INC exactly matching nocturnal16/vsd.
  */
 function renderTableOnly() {
   const tableBody = document.getElementById('tableBody');
@@ -1044,21 +1190,28 @@ function renderTableOnly() {
   
   const trackPart = getActiveTrackParticipants();
   
+  // Filter cohort for ranking
   const gradedPart = trackPart.filter(p => 
     p.tempScore !== null && (state.includeResigned || !p.isResigned)
   );
   
+  // Sort descending
   gradedPart.sort((a, b) => b.tempScore - a.tempScore);
   
-  let currentRank = 0;
-  let lastScore = -1;
+  // Assign Dense Ranks
+  let rankTracker = 1;
   gradedPart.forEach((p, idx) => {
-    if (p.tempScore !== lastScore) {
-      currentRank = idx + 1;
-      lastScore = p.tempScore;
+    if (idx > 0 && p.tempScore < gradedPart[idx - 1].tempScore) {
+      rankTracker++;
     }
-    p.rank = currentRank;
-    p.percentile = ((currentRank / gradedPart.length) * 100).toFixed(1);
+    p.rank = rankTracker;
+  });
+  
+  // Assign Percentile Rank (1 - percentRankInc) * 100
+  const sortedScoresAsc = gradedPart.map(p => p.tempScore).sort((a, b) => a - b);
+  gradedPart.forEach(p => {
+    const rankPercent = percentRankInc(sortedScoresAsc, p.tempScore);
+    p.percentile = ((1 - rankPercent) * 100).toFixed(1);
   });
   
   trackPart.forEach(p => {
@@ -1119,9 +1272,9 @@ function renderTableOnly() {
     let noteHtml = '';
     if (p.note) {
       if (p.note.startsWith('http')) {
-        noteHtml = `<a href="${p.note}" target="_blank" class="note-link tooltip-trigger" data-tooltip="Open student drive folder"><i class="fa-regular fa-folder-open"></i></a>`;
+        noteHtml = `<a href="${p.note}" target="_blank" class="note-link tooltip-trigger" data-tooltip="Open student folder"><i class="fa-regular fa-folder-open"></i></a>`;
       } else {
-        noteHtml = `<span class="note-text" title="${p.note}">${p.note}</span>`;
+        noteHtml = `<span class="note-text tooltip-trigger" data-tooltip="${p.note}">${p.note}</span>`;
       }
     } else {
       noteHtml = `<span class="resigned-text">Resigned</span>`;

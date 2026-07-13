@@ -4,26 +4,36 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>vdt2026agg</title>
-
+  
   <!-- SEO Meta Tags -->
   <meta name="description" content="A minimal console application built in AWS Console design system to aggregate and analyze the Viettel Digital Talent 2026 evaluations.">
-
+  
   <!-- Google Fonts (Inter & Outfit) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=Source+Code+Pro:wght@400;500;600&display=swap" rel="stylesheet">
-
+  
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
+  
   <!-- Custom Stylesheet -->
   <link rel="stylesheet" href="style.css">
-
+  
   <!-- SheetJS & Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="aws-dark-theme">
+
+  <!-- Inject theme script immediately to avoid theme flashes -->
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem('vdt2026_theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const theme = savedTheme || (prefersDark ? 'dark' : 'light');
+      document.body.className = theme === 'dark' ? 'aws-dark-theme' : 'aws-light-theme';
+    })();
+  </script>
 
   <!-- AWS Global Header -->
   <header class="aws-header animate-fade-in">
@@ -37,17 +47,17 @@
         <span class="project-name">Evaluations Aggregator</span>
       </div>
     </div>
-
+    
     <div class="aws-header-center">
       <div class="aws-search-container">
         <i class="fa-solid fa-search aws-search-icon"></i>
-        <input type="text" id="globalSearch" placeholder="Search student name, phone, project code, or unit...">
+        <input type="text" id="globalSearch" placeholder="Quick find students, units, project codes...">
         <div class="aws-search-shortcut">/</div>
       </div>
     </div>
-
+    
     <div class="aws-header-right">
-      <button class="theme-toggle-btn tooltip-trigger" id="themeToggleBtn" data-tooltip="Switch theme mode">
+      <button class="theme-toggle-btn tooltip-trigger" id="themeToggleBtn" data-tooltip="Toggle light/dark theme">
         <i class="fa-solid fa-sun" id="themeIcon"></i>
       </button>
       <div class="aws-user-profile">
@@ -59,73 +69,10 @@
 
   <!-- AWS Layout Wrapper -->
   <div class="aws-layout">
-
-    <!-- AWS Left Navigation Sidebar -->
-    <aside class="aws-sidebar animate-slide-right">
-      <div class="sidebar-title">
-        <i class="fa-solid fa-sliders"></i>
-        <span>Controls</span>
-      </div>
-
-      <!-- Track Selector Section -->
-      <div class="sidebar-group">
-        <div class="sidebar-group-title">Evaluation Tracks</div>
-        <ul class="sidebar-menu">
-          <li class="sidebar-menu-item active" data-track="SwE" id="track-SwE">
-            <i class="fa-solid fa-network-wired"></i>
-            <span>All Tracks</span>
-          </li>
-          <li class="sidebar-menu-item" data-track="System" id="track-System">
-            <i class="fa-solid fa-server"></i>
-            <span>System</span>
-          </li>
-          <li class="sidebar-menu-item" data-track="Web" id="track-Web">
-            <i class="fa-solid fa-globe"></i>
-            <span>Web Development</span>
-          </li>
-          <li class="sidebar-menu-item" data-track="HPC" id="track-HPC">
-            <i class="fa-solid fa-microchip"></i>
-            <span>HPC</span>
-          </li>
-        </ul>
-      </div>
-
-      <!-- Config & Parameterization Section -->
-      <div class="sidebar-group">
-        <div class="sidebar-group-title">Spreadsheet Source</div>
-        <div class="sidebar-config-box">
-          <label for="sheetUrlInput" class="config-label">Google Sheets Link</label>
-          <input type="text" id="sheetUrlInput" class="aws-input" placeholder="Paste spreadsheet link...">
-          <div class="config-buttons">
-            <button id="saveSheetUrlBtn" class="aws-btn aws-btn-primary">Apply</button>
-            <button id="resetSheetUrlBtn" class="aws-btn aws-btn-secondary tooltip-trigger" data-tooltip="Reset source to default"><i class="fa-solid fa-rotate-left"></i></button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Score Manipulation Section -->
-      <div class="sidebar-group">
-        <div class="sidebar-group-title">Calculations</div>
-        <div class="sidebar-checkbox-group">
-          <label class="aws-checkbox-container">
-            <input type="checkbox" id="interpolateScoreCheckbox">
-            <span class="checkmark"></span>
-            <span class="checkbox-text">Interpolate Scores</span>
-            <i class="fa-solid fa-circle-info tooltip-trigger" data-tooltip="Averages evaluation scores based on actual graded members only (e.g. if graded by 2 instead of 3, final score will be average of 2 instead of divided by 3)."></i>
-          </label>
-          <label class="aws-checkbox-container">
-            <input type="checkbox" id="includeResignedCheckbox">
-            <span class="checkmark"></span>
-            <span class="checkbox-text">Include Resigned</span>
-            <i class="fa-solid fa-circle-info tooltip-trigger" data-tooltip="Consider resigned students (those with blank 'Ghi chú') in final score metrics with a score of 0."></i>
-          </label>
-        </div>
-      </div>
-    </aside>
-
-    <!-- AWS Main Content Area -->
+    
+    <!-- AWS Main Content Area (Full Width) -->
     <main class="aws-main-content">
-
+      
       <!-- Breadcrumb Bar -->
       <div class="aws-breadcrumb-bar animate-fade-in">
         <span class="breadcrumb-item">Console Home</span>
@@ -146,6 +93,69 @@
             <i class="fa-solid fa-arrows-rotate"></i>
             <span>Refresh Data</span>
           </button>
+        </div>
+      </div>
+
+      <!-- Controls Toolbar (Integrated Tracks, Board, Search, Settings toggle) -->
+      <div class="controls-toolbar animate-fade-in">
+        <div class="toolbar-left">
+          <div class="track-tabs">
+            <button class="track-tab active" data-track="SwE" id="tab-SwE">All Tracks</button>
+            <button class="track-tab" data-track="System" id="tab-System">System</button>
+            <button class="track-tab" data-track="Web" id="tab-Web">Web Development</button>
+            <button class="track-tab" data-track="HPC" id="tab-HPC">HPC</button>
+          </div>
+        </div>
+        
+        <div class="toolbar-right">
+          <div class="table-filter-box">
+            <label for="boardFilterSelect">Board:</label>
+            <select id="boardFilterSelect" class="aws-select">
+              <option value="all">All Boards</option>
+            </select>
+          </div>
+          
+          <div class="table-search-box">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="tableSearch" placeholder="Filter by student name...">
+          </div>
+          
+          <button id="toggleSettingsBtn" class="aws-btn aws-btn-secondary tooltip-trigger" data-tooltip="Configure calculations & spreadsheet source">
+            <i class="fa-solid fa-sliders"></i>
+            <span>Settings</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Collapsible Settings Panel -->
+      <div id="settingsPanel" class="settings-panel collapsible collapsed animate-fade-in">
+        <div class="settings-panel-content">
+          <div class="settings-section">
+            <h3>Spreadsheet Source</h3>
+            <div class="spreadsheet-config">
+              <input type="text" id="sheetUrlInput" class="aws-input" placeholder="Paste Google Sheets link...">
+              <button id="saveSheetUrlBtn" class="aws-btn aws-btn-primary">Apply</button>
+              <button id="resetSheetUrlBtn" class="aws-btn aws-btn-secondary tooltip-trigger" data-tooltip="Reset source link to default"><i class="fa-solid fa-rotate-left"></i></button>
+            </div>
+          </div>
+          <div class="settings-separator"></div>
+          <div class="settings-section">
+            <h3>Calculation Controls</h3>
+            <div class="checkbox-group">
+              <label class="aws-checkbox-container">
+                <input type="checkbox" id="interpolateScoreCheckbox">
+                <span class="checkmark"></span>
+                <span class="checkbox-text">Interpolate Final Scores</span>
+                <i class="fa-solid fa-circle-info tooltip-trigger" data-tooltip="Calculates final score as average of actual evaluations only (ignores missing evaluations instead of dividing them as zero)."></i>
+              </label>
+              <label class="aws-checkbox-container">
+                <input type="checkbox" id="includeResignedCheckbox">
+                <span class="checkmark"></span>
+                <span class="checkbox-text">Include Resigned Students</span>
+                <i class="fa-solid fa-circle-info tooltip-trigger" data-tooltip="Includes resigned students (those with empty notes) in statistics calculations with a score of 0."></i>
+              </label>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -203,10 +213,10 @@
 
       <!-- Main Dashboard Grid Layout -->
       <div class="dashboard-grid">
-
+        
         <!-- Left Side: Metrics & General Stats -->
         <div class="dashboard-col-left">
-
+          
           <!-- Score Metrics Card -->
           <div class="aws-card">
             <div class="aws-card-header">
@@ -252,12 +262,12 @@
               </div>
             </div>
           </div>
-
+          
           <!-- Student Status / Grading Member Counts Chart -->
           <div class="aws-card">
             <div class="aws-card-header">
               <h2>Grader Coverage</h2>
-              <i class="fa-solid fa-circle-question tooltip-trigger card-info-icon" data-tooltip="Breakdown showing students who are resigned, active with 0 evaluations (e.g. HPC), or graded by 1, 2, or 3 grading members. Sums to total student count."></i>
+              <i class="fa-solid fa-circle-question tooltip-trigger card-info-icon" data-tooltip="Shows breakdown of students: resigned (empty note), ungraded (e.g. HPC), or graded by 1, 2, or 3 grading members. Sum matches total students."></i>
             </div>
             <div class="aws-card-body chart-card-body">
               <div class="chart-container">
@@ -265,12 +275,12 @@
               </div>
             </div>
           </div>
-
+          
         </div>
 
         <!-- Right Side: Analytics Charts -->
         <div class="dashboard-col-right">
-
+          
           <!-- Score Distribution Histogram -->
           <div class="aws-card">
             <div class="aws-card-header">
@@ -287,18 +297,18 @@
               </div>
             </div>
           </div>
-
+          
         </div>
       </div>
 
       <!-- Middle Grid: Grader and Time comparisons -->
       <div class="dashboard-grid-two">
-
+        
         <!-- Grader Comparison Card -->
         <div class="aws-card">
           <div class="aws-card-header">
-            <h2>Grader Average score</h2>
-            <i class="fa-solid fa-circle-question tooltip-trigger card-info-icon" data-tooltip="Compares average scores given by each unique grader unit (e.g. VCS, VTNet, VHT, VTX) to identify grading tendencies."></i>
+            <h2>Grader Average Score</h2>
+            <i class="fa-solid fa-circle-question tooltip-trigger card-info-icon" data-tooltip="Compares average scores given by each unique grader unit (e.g. VCS, VTNet, VHT, VTX) to check who tends to grade higher or lower."></i>
           </div>
           <div class="aws-card-body chart-card-body">
             <div class="chart-container">
@@ -317,7 +327,7 @@
             <h2>Score by Time</h2>
             <div class="card-header-actions">
               <select id="timeCompareSelect" class="aws-select-sm">
-                <option value="session">Session (Sáng/Chiều)</option>
+                <option value="session">Session (Morning/Afternoon)</option>
                 <option value="date">Date</option>
                 <option value="slot">Time Slot</option>
               </select>
@@ -333,7 +343,7 @@
             </div>
           </div>
         </div>
-
+        
       </div>
 
       <!-- Bottom Section: Database Table of Students -->
@@ -342,20 +352,6 @@
           <div class="table-header-left">
             <h2>Students Directory</h2>
             <span class="table-count-badge" id="tableRecordCount">0 records found</span>
-          </div>
-          <div class="table-header-right">
-            <!-- Search bar -->
-            <div class="table-search-box">
-              <i class="fa-solid fa-magnifying-glass"></i>
-              <input type="text" id="tableSearch" placeholder="Filter by name...">
-            </div>
-            <!-- Board (Sheet) filter dropdown -->
-            <div class="table-filter-box">
-              <label for="boardFilterSelect">Board:</label>
-              <select id="boardFilterSelect" class="aws-select">
-                <option value="all">All Boards</option>
-              </select>
-            </div>
           </div>
         </div>
         <div class="aws-card-body no-padding">
@@ -366,9 +362,9 @@
                   <th style="width: 60px;">Rank</th>
                   <th style="width: 90px;">Percentile</th>
                   <th>Board</th>
-                  <th style="width: 90px;">Session</th>
+                  <th style="width: 100px;">Session</th>
                   <th style="width: 70px;">Date</th>
-                  <th style="width: 100px;">Time Slot</th>
+                  <th style="width: 110px;">Time Slot</th>
                   <th>Student Name</th>
                   <th>Phone</th>
                   <th style="width: 110px;">Project ID</th>
@@ -386,14 +382,14 @@
               </tbody>
             </table>
           </div>
-
+          
           <!-- Table Empty State -->
           <div id="tableEmptyState" class="table-no-results-state hidden">
             <i class="fa-regular fa-folder-open"></i>
             <h3>No matching results</h3>
             <p>Try adjusting your search query, board filter, or active track.</p>
           </div>
-
+          
         </div>
       </section>
 
