@@ -651,6 +651,10 @@ function getParticipantScore(p, interpolate) {
 function getActiveTrackParticipants() {
   let list = state.allParticipants.filter(p => isInActiveTrack(p));
   
+  if (!state.includeResigned) {
+    list = list.filter(p => !p.isResigned);
+  }
+  
   list.forEach(p => {
     p.tempScore = getParticipantScore(p, state.interpolateScore);
   });
@@ -680,20 +684,17 @@ function renderAll() {
  * Computes and renders Quick Stats cards at the top
  */
 function renderQuickStats() {
-  const participants = state.allParticipants.filter(p => isInActiveTrack(p));
+  const participants = getActiveTrackParticipants();
   const total = participants.length;
   const resigned = participants.filter(p => p.isResigned).length;
   
   const graded = participants.filter(p => p.hasGrading ? p.graderCount > 0 : !p.isResigned).length;
   
-  const gradedPart = participants.filter(p => {
-    let s = getParticipantScore(p, state.interpolateScore);
-    return s !== null && (state.includeResigned || !p.isResigned);
-  });
+  const gradedPart = participants.filter(p => p.tempScore !== null);
   
   let avg = 0;
   if (gradedPart.length > 0) {
-    const sum = gradedPart.reduce((acc, p) => acc + getParticipantScore(p, state.interpolateScore), 0);
+    const sum = gradedPart.reduce((acc, p) => acc + p.tempScore, 0);
     avg = sum / gradedPart.length;
   }
 
@@ -710,11 +711,7 @@ function renderMetricsTable() {
   const participants = getActiveTrackParticipants();
   
   const scores = participants
-    .filter(p => {
-      if (p.tempScore === null) return false;
-      if (!state.includeResigned && p.isResigned) return false;
-      return true;
-    })
+    .filter(p => p.tempScore !== null)
     .map(p => p.tempScore);
     
   const stats = calculateStats(scores);
@@ -772,11 +769,7 @@ function renderDistributionChart() {
   const colors = getChartThemeColors();
   
   const scores = participants
-    .filter(p => {
-      if (p.tempScore === null) return false;
-      if (!state.includeResigned && p.isResigned) return false;
-      return true;
-    })
+    .filter(p => p.tempScore !== null)
     .map(p => p.tempScore);
 
   const canvasId = 'scoreHistogramChart';

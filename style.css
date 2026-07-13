@@ -69,12 +69,14 @@
   --chart-text: #94a3b8;
 }
 
-/* Reset and Core layout */
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  font-family: var(--font-sans) !important; /* Force font family everywhere */
+}
+
+*:not(i):not([class*="fa-"]) {
+  font-family: var(--font-sans) !important;
 }
 
 body {
