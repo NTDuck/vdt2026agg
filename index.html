@@ -3,22 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AWS Console - VDT 2026 MiniProject Aggregator</title>
-  
+  <title>vdt2026agg</title>
+
   <!-- SEO Meta Tags -->
   <meta name="description" content="A minimal console application built in AWS Console design system to aggregate and analyze the Viettel Digital Talent 2026 evaluations.">
-  
+
   <!-- Google Fonts (Inter & Outfit) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=Source+Code+Pro:wght@400;500;600&display=swap" rel="stylesheet">
-  
+
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
+
   <!-- Custom Stylesheet -->
   <link rel="stylesheet" href="style.css">
-  
+
   <!-- SheetJS & Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -37,7 +37,7 @@
         <span class="project-name">Evaluations Aggregator</span>
       </div>
     </div>
-    
+
     <div class="aws-header-center">
       <div class="aws-search-container">
         <i class="fa-solid fa-search aws-search-icon"></i>
@@ -45,7 +45,7 @@
         <div class="aws-search-shortcut">/</div>
       </div>
     </div>
-    
+
     <div class="aws-header-right">
       <button class="theme-toggle-btn tooltip-trigger" id="themeToggleBtn" data-tooltip="Switch theme mode">
         <i class="fa-solid fa-sun" id="themeIcon"></i>
@@ -59,14 +59,14 @@
 
   <!-- AWS Layout Wrapper -->
   <div class="aws-layout">
-    
+
     <!-- AWS Left Navigation Sidebar -->
     <aside class="aws-sidebar animate-slide-right">
       <div class="sidebar-title">
         <i class="fa-solid fa-sliders"></i>
         <span>Controls</span>
       </div>
-      
+
       <!-- Track Selector Section -->
       <div class="sidebar-group">
         <div class="sidebar-group-title">Evaluation Tracks</div>
@@ -125,7 +125,7 @@
 
     <!-- AWS Main Content Area -->
     <main class="aws-main-content">
-      
+
       <!-- Breadcrumb Bar -->
       <div class="aws-breadcrumb-bar animate-fade-in">
         <span class="breadcrumb-item">Console Home</span>
@@ -203,10 +203,10 @@
 
       <!-- Main Dashboard Grid Layout -->
       <div class="dashboard-grid">
-        
+
         <!-- Left Side: Metrics & General Stats -->
         <div class="dashboard-col-left">
-          
+
           <!-- Score Metrics Card -->
           <div class="aws-card">
             <div class="aws-card-header">
@@ -252,7 +252,7 @@
               </div>
             </div>
           </div>
-          
+
           <!-- Student Status / Grading Member Counts Chart -->
           <div class="aws-card">
             <div class="aws-card-header">
@@ -265,12 +265,12 @@
               </div>
             </div>
           </div>
-          
+
         </div>
 
         <!-- Right Side: Analytics Charts -->
         <div class="dashboard-col-right">
-          
+
           <!-- Score Distribution Histogram -->
           <div class="aws-card">
             <div class="aws-card-header">
@@ -287,13 +287,13 @@
               </div>
             </div>
           </div>
-          
+
         </div>
       </div>
 
       <!-- Middle Grid: Grader and Time comparisons -->
       <div class="dashboard-grid-two">
-        
+
         <!-- Grader Comparison Card -->
         <div class="aws-card">
           <div class="aws-card-header">
@@ -333,7 +333,7 @@
             </div>
           </div>
         </div>
-        
+
       </div>
 
       <!-- Bottom Section: Database Table of Students -->
@@ -386,14 +386,14 @@
               </tbody>
             </table>
           </div>
-          
+
           <!-- Table Empty State -->
           <div id="tableEmptyState" class="table-no-results-state hidden">
             <i class="fa-regular fa-folder-open"></i>
             <h3>No matching results</h3>
             <p>Try adjusting your search query, board filter, or active track.</p>
           </div>
-          
+
         </div>
       </section>
 
