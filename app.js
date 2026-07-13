@@ -7,7 +7,7 @@
 
 // Configuration
 const DEFAULT_SPREADSHEET_ID = '16rUgoJlObiB6ymHkzyDrn5wTW5XtmpPumYUr5FvHd4g';
-const DEFAULT_SPREADSHEET_URL = `https://docs.google.com/spreadsheets/d/${DEFAULT_SPREADSHEET_ID}/edit?usp=sharing`;
+const DEFAULT_SPREADSHEET_URL = 'https://docs.google.com/spreadsheets/d/16rUgoJlObiB6ymHkzyDrn5wTW5XtmpPumYUr5FvHd4g/edit?gid=2076177057#gid=2076177057';
 
 // Application State
 const state = {
@@ -1403,4 +1403,53 @@ function showToast(title, desc, type = 'info') {
       toast.classList.add('hidden');
     }, 6000);
   }
+}
+
+/**
+ * Saves current config/settings to localStorage.
+ */
+function saveSettings() {
+  localStorage.setItem('vdt2026_sheet_id', state.spreadsheetId);
+  localStorage.setItem('vdt2026_sheet_url', state.spreadsheetUrl);
+  localStorage.setItem('vdt2026_theme', state.theme);
+  localStorage.setItem('vdt2026_interpolate', state.interpolateScore ? 'true' : 'false');
+  localStorage.setItem('vdt2026_include_resigned', state.includeResigned ? 'true' : 'false');
+}
+
+/**
+ * Loads configuration settings from localStorage.
+ */
+function loadSavedSettings() {
+  const savedId = localStorage.getItem('vdt2026_sheet_id');
+  const savedUrl = localStorage.getItem('vdt2026_sheet_url');
+  const savedTheme = localStorage.getItem('vdt2026_theme');
+  const savedInterpolate = localStorage.getItem('vdt2026_interpolate');
+  const savedIncludeResigned = localStorage.getItem('vdt2026_include_resigned');
+
+  if (savedId) state.spreadsheetId = savedId;
+  if (savedUrl) state.spreadsheetUrl = savedUrl;
+  if (savedTheme) {
+    state.theme = savedTheme;
+    applyTheme(savedTheme);
+  }
+  if (savedInterpolate) state.interpolateScore = savedInterpolate === 'true';
+  if (savedIncludeResigned) state.includeResigned = savedIncludeResigned === 'true';
+
+  // Sync checkboxes in settings UI drawer
+  const interpolateCheckbox = document.getElementById('interpolateScoreCheckbox');
+  if (interpolateCheckbox) interpolateCheckbox.checked = state.interpolateScore;
+
+  const includeResignedCheckbox = document.getElementById('includeResignedCheckbox');
+  if (includeResignedCheckbox) includeResignedCheckbox.checked = state.includeResigned;
+}
+
+/**
+ * Parses and returns the 44-character spreadsheet ID from a Google Sheets URL.
+ */
+function getSpreadsheetId(url) {
+  if (!url) return null;
+  const cleaned = url.trim();
+  if (cleaned.length === 44 && !cleaned.includes('/')) return cleaned;
+  const match = cleaned.match(/\/d\/([a-zA-Z0-9-_]{44})/);
+  return match ? match[1] : null;
 }
