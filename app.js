@@ -308,6 +308,7 @@ async function loadInitialData() {
     try {
       const data = JSON.parse(cachedData);
       state.allParticipants = data.all_participants;
+      normalizeParticipants(state.allParticipants);
       state.lastUpdated = data.lastUpdated || 'Loaded from local cache';
       
       updateLastUpdatedDisplay(state.lastUpdated);
@@ -324,6 +325,7 @@ async function loadInitialData() {
     if (response.ok) {
       const data = await response.json();
       state.allParticipants = data.all_participants;
+      normalizeParticipants(state.allParticipants);
       state.lastUpdated = 'Preloaded static dataset (2026-07-13)';
       
       updateLastUpdatedDisplay(state.lastUpdated);
@@ -561,6 +563,7 @@ function parseWorkbookData(wb) {
     }
   });
   
+  normalizeParticipants(parsedParticipants);
   state.allParticipants = parsedParticipants;
 }
 
@@ -584,19 +587,18 @@ function changeTrack(track) {
   document.getElementById('dashboardTitle').innerText = 
     track === 'SwE' ? 'MiniProject Evaluations' : `${track} Evaluations`;
   
-  // Reset the Board filter element to All Boards
-  document.getElementById('boardFilterSelect').value = 'all';
-  
-  rebuildBoardFilterDropdown();
   state.currentPage = 1;
   renderAll();
 }
 
 /**
- * Rebuilds the board selection dropdown menu based on the selected track.
+ * Rebuilds the board selection dropdown menu based on the selected track, preserving the currently selected board if valid.
  */
 function rebuildBoardFilterDropdown() {
   const boardFilterSelect = document.getElementById('boardFilterSelect');
+  if (!boardFilterSelect) return;
+  
+  const currentValue = state.activeBoard;
   boardFilterSelect.innerHTML = '<option value="all">All Boards</option>';
   
   const activeBoards = new Set();
@@ -616,6 +618,13 @@ function rebuildBoardFilterDropdown() {
     opt.innerText = board;
     boardFilterSelect.appendChild(opt);
   });
+  
+  if (activeBoards.has(currentValue)) {
+    boardFilterSelect.value = currentValue;
+  } else {
+    boardFilterSelect.value = 'all';
+    state.activeBoard = 'all';
+  }
 }
 
 /**
@@ -674,6 +683,7 @@ function renderAll() {
     return;
   }
 
+  rebuildBoardFilterDropdown();
   renderQuickStats();
   renderMetricsTable();
   renderDistributionChart();
@@ -729,9 +739,6 @@ function renderMetricsTable() {
   document.getElementById('metricP90').innerText = stats.p90.toFixed(2);
   document.getElementById('metricP95').innerText = stats.p95.toFixed(2);
   document.getElementById('metricGradedCount').innerText = scores.length;
-  
-  document.getElementById('metricsFilterLabel').innerText = 
-    state.includeResigned ? 'All Participants (incl. Resigned)' : 'Active Participants Only';
 }
 
 /**
@@ -1455,4 +1462,24 @@ function getSpreadsheetId(url) {
   if (cleaned.length === 44 && !cleaned.includes('/')) return cleaned;
   const match = cleaned.match(/\/d\/([a-zA-Z0-9-_]{44})/);
   return match ? match[1] : null;
+}
+
+/**
+ * Normalizes participant attributes across various load sources (caches, file preloads).
+ */
+function normalizeParticipants(list) {
+  if (!list) return;
+  list.forEach(p => {
+    if (p.finalScore === 0.0 || p.finalScore === 0) {
+      p.isResigned = true;
+    }
+    if (!p.note || String(p.note).trim() === '') {
+      p.isResigned = true;
+    }
+    
+    // Normalize session translations
+    if (p.session === 'Chiểu') p.session = 'Chiều';
+    if (p.session === 'Sáng') p.session = 'Morning';
+    if (p.session === 'Chiều') p.session = 'Afternoon';
+  });
 }

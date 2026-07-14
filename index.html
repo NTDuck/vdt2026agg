@@ -33,37 +33,86 @@
     })();
   </script>
 
-  <!-- Global Header -->
+  <!-- Sticky Top Bar (Contains Controls & Actions) -->
   <header class="aws-header animate-fade-in">
     <div class="aws-header-left">
-      <div class="aws-logo">
-        <i class="fa-solid fa-cubes-stacked aws-logo-icon"></i>
-        <span class="aws-logo-text">Console</span>
+      <!-- Track tabs selector -->
+      <div class="track-tabs">
+        <button class="track-tab active" data-track="SwE" id="tab-SwE">All Tracks</button>
+        <button class="track-tab" data-track="System" id="tab-System">System</button>
+        <button class="track-tab" data-track="Web" id="tab-Web">Web Development</button>
+        <button class="track-tab" data-track="HPC" id="tab-HPC">HPC</button>
       </div>
-      <div class="aws-project-title">
-        <span class="vdt-badge">VDT 2026</span>
-        <span class="project-name">Evaluations Aggregator</span>
+
+      <!-- Board Filter -->
+      <div class="table-filter-box">
+        <label for="boardFilterSelect">Board:</label>
+        <select id="boardFilterSelect" class="aws-select">
+          <option value="all">All Boards</option>
+        </select>
+      </div>
+      
+      <!-- Search Input -->
+      <div class="table-search-box">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" id="tableSearch" placeholder="Filter by participant name...">
       </div>
     </div>
     
     <div class="aws-header-right">
+      <!-- Settings toggler -->
+      <button id="toggleSettingsBtn" class="aws-btn-icon tooltip-trigger" data-tooltip="Configure Calculations & Spreadsheet Source">
+        <i class="fa-solid fa-sliders"></i>
+      </button>
+
+      <!-- GitHub Link -->
       <a href="https://github.com/NTDuck/vdt2026agg" target="_blank" class="github-link tooltip-trigger" data-tooltip="View on GitHub">
         <i class="fa-brands fa-github"></i>
       </a>
-      <button class="theme-toggle-btn tooltip-trigger" id="themeToggleBtn" data-tooltip="Toggle light/dark theme">
+
+      <!-- Brightness / Theme Toggle -->
+      <button class="theme-toggle-btn tooltip-trigger" id="themeToggleBtn" data-tooltip="Toggle Light/Dark Theme">
         <i class="fa-solid fa-sun" id="themeIcon"></i>
       </button>
-      <div class="aws-user-profile">
-        <i class="fa-regular fa-user"></i>
-        <span>Admin</span>
-      </div>
     </div>
   </header>
+
+  <!-- Collapsible Settings Panel -->
+  <div id="settingsPanel" class="settings-panel collapsible collapsed animate-fade-in">
+    <div class="settings-panel-content">
+      <div class="settings-section">
+        <h3>Spreadsheet Source</h3>
+        <div class="spreadsheet-config">
+          <input type="text" id="sheetUrlInput" class="aws-input" placeholder="Paste Google Sheets link...">
+          <button id="saveSheetUrlBtn" class="aws-btn aws-btn-primary">Apply</button>
+          <button id="resetSheetUrlBtn" class="aws-btn aws-btn-secondary tooltip-trigger" data-tooltip="Reset source link to default"><i class="fa-solid fa-rotate-left"></i></button>
+        </div>
+      </div>
+      <div class="settings-separator"></div>
+      <div class="settings-section">
+        <h3>Calculation Controls</h3>
+        <div class="checkbox-group">
+          <label class="aws-checkbox-container">
+            <input type="checkbox" id="interpolateScoreCheckbox">
+            <span class="checkmark"></span>
+            <span class="checkbox-text">Interpolate Final Scores</span>
+            <i class="fa-solid fa-circle-info tooltip-trigger" data-tooltip="Calculates final score as average of actual evaluations only (ignores missing evaluations instead of dividing them as zero)."></i>
+          </label>
+          <label class="aws-checkbox-container">
+            <input type="checkbox" id="includeResignedCheckbox">
+            <span class="checkmark"></span>
+            <span class="checkbox-text">Include Resigned Participants</span>
+            <i class="fa-solid fa-circle-info tooltip-trigger" data-tooltip="Includes resigned participants (those with empty notes or score = 0) in statistics calculations with a score of 0."></i>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Layout Wrapper -->
   <div class="aws-layout">
     
-    <!-- Main Content Area (Full Width) -->
+    <!-- Main Content Area -->
     <main class="aws-main-content">
 
       <!-- Dash Title & Sync -->
@@ -77,69 +126,6 @@
             <i class="fa-solid fa-arrows-rotate"></i>
             <span>Refresh Data</span>
           </button>
-        </div>
-      </div>
-
-      <!-- Controls Toolbar (Integrated Tracks, Board, Search, Settings toggle) -->
-      <div class="controls-toolbar animate-fade-in">
-        <div class="toolbar-left">
-          <div class="track-tabs">
-            <button class="track-tab active" data-track="SwE" id="tab-SwE">All Tracks</button>
-            <button class="track-tab" data-track="System" id="tab-System">System</button>
-            <button class="track-tab" data-track="Web" id="tab-Web">Web Development</button>
-            <button class="track-tab" data-track="HPC" id="tab-HPC">HPC</button>
-          </div>
-        </div>
-        
-        <div class="toolbar-right">
-          <div class="table-filter-box">
-            <label for="boardFilterSelect">Board:</label>
-            <select id="boardFilterSelect" class="aws-select">
-              <option value="all">All Boards</option>
-            </select>
-          </div>
-          
-          <div class="table-search-box">
-            <i class="fa-solid fa-magnifying-glass"></i>
-            <input type="text" id="tableSearch" placeholder="Filter by participant name...">
-          </div>
-          
-          <button id="toggleSettingsBtn" class="aws-btn aws-btn-secondary tooltip-trigger" data-tooltip="Configure calculations & spreadsheet source">
-            <i class="fa-solid fa-sliders"></i>
-            <span>Settings</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Collapsible Settings Panel -->
-      <div id="settingsPanel" class="settings-panel collapsible collapsed animate-fade-in">
-        <div class="settings-panel-content">
-          <div class="settings-section">
-            <h3>Spreadsheet Source</h3>
-            <div class="spreadsheet-config">
-              <input type="text" id="sheetUrlInput" class="aws-input" placeholder="Paste Google Sheets link...">
-              <button id="saveSheetUrlBtn" class="aws-btn aws-btn-primary">Apply</button>
-              <button id="resetSheetUrlBtn" class="aws-btn aws-btn-secondary tooltip-trigger" data-tooltip="Reset source link to default"><i class="fa-solid fa-rotate-left"></i></button>
-            </div>
-          </div>
-          <div class="settings-separator"></div>
-          <div class="settings-section">
-            <h3>Calculation Controls</h3>
-            <div class="checkbox-group">
-              <label class="aws-checkbox-container">
-                <input type="checkbox" id="interpolateScoreCheckbox">
-                <span class="checkmark"></span>
-                <span class="checkbox-text">Interpolate Final Scores</span>
-                <i class="fa-solid fa-circle-info tooltip-trigger" data-tooltip="Calculates final score as average of actual evaluations only (ignores missing evaluations instead of dividing them as zero)."></i>
-              </label>
-              <label class="aws-checkbox-container">
-                <input type="checkbox" id="includeResignedCheckbox">
-                <span class="checkmark"></span>
-                <span class="checkbox-text">Include Resigned Participants</span>
-                <i class="fa-solid fa-circle-info tooltip-trigger" data-tooltip="Includes resigned participants (those with empty notes) in statistics calculations with a score of 0."></i>
-              </label>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -198,91 +184,80 @@
       <!-- Main Dashboard Grid Layout -->
       <div class="dashboard-grid">
         
-        <!-- Left Side: Metrics & General Stats -->
-        <div class="dashboard-col-left">
-          
-          <!-- Score Metrics Card -->
-          <div class="aws-card">
-            <div class="aws-card-header">
-              <h2>Score Metrics</h2>
-              <div class="card-header-badge" id="metricsFilterLabel">Active Participants</div>
+        <!-- Score Metrics Card (Span Full Width) -->
+        <div class="aws-card full-width-card">
+          <div class="aws-card-header">
+            <h2>Score Metrics</h2>
+          </div>
+          <div class="aws-card-body">
+            <div class="metrics-table-container">
+              <table class="metrics-table">
+                <tbody>
+                  <tr>
+                    <td class="metric-name"><i class="fa-solid fa-chart-line"></i> Mean Score</td>
+                    <td class="metric-val" id="metricMean">0.00</td>
+                    <td class="metric-name"><i class="fa-solid fa-arrow-down-9-1"></i> Max Score</td>
+                    <td class="metric-val" id="metricMax">0.00</td>
+                  </tr>
+                  <tr>
+                    <td class="metric-name"><i class="fa-solid fa-equals"></i> Median Score</td>
+                    <td class="metric-val" id="metricMedian">0.00</td>
+                    <td class="metric-name"><i class="fa-solid fa-arrow-up-1-9"></i> Min Score</td>
+                    <td class="metric-val" id="metricMin">0.00</td>
+                  </tr>
+                  <tr>
+                    <td class="metric-name"><i class="fa-solid fa-arrow-trend-up"></i> Std Deviation</td>
+                    <td class="metric-val" id="metricStd">0.00</td>
+                    <td class="metric-name"><i class="fa-solid fa-percent"></i> 95th Percentile</td>
+                    <td class="metric-val" id="metricP95">0.00</td>
+                  </tr>
+                  <tr>
+                    <td class="metric-name"><i class="fa-solid fa-percent"></i> 90th Percentile</td>
+                    <td class="metric-val" id="metricP90">0.00</td>
+                    <td class="metric-name"><i class="fa-solid fa-percent"></i> 75th Percentile (Q3)</td>
+                    <td class="metric-val" id="metricP75">0.00</td>
+                  </tr>
+                  <tr>
+                    <td class="metric-name"><i class="fa-solid fa-percent"></i> 25th Percentile (Q1)</td>
+                    <td class="metric-val" id="metricP25">0.00</td>
+                    <td class="metric-name"><i class="fa-solid fa-users-viewfinder"></i> Graded Count</td>
+                    <td class="metric-val" id="metricGradedCount">0</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-            <div class="aws-card-body">
-              <div class="metrics-table-container">
-                <table class="metrics-table">
-                  <tbody>
-                    <tr>
-                      <td class="metric-name"><i class="fa-solid fa-chart-line"></i> Mean Score</td>
-                      <td class="metric-val" id="metricMean">0.00</td>
-                      <td class="metric-name"><i class="fa-solid fa-arrow-down-9-1"></i> Max Score</td>
-                      <td class="metric-val" id="metricMax">0.00</td>
-                    </tr>
-                    <tr>
-                      <td class="metric-name"><i class="fa-solid fa-equals"></i> Median Score</td>
-                      <td class="metric-val" id="metricMedian">0.00</td>
-                      <td class="metric-name"><i class="fa-solid fa-arrow-up-1-9"></i> Min Score</td>
-                      <td class="metric-val" id="metricMin">0.00</td>
-                    </tr>
-                    <tr>
-                      <td class="metric-name"><i class="fa-solid fa-arrow-trend-up"></i> Std Deviation</td>
-                      <td class="metric-val" id="metricStd">0.00</td>
-                      <td class="metric-name"><i class="fa-solid fa-percent"></i> 95th Percentile</td>
-                      <td class="metric-val" id="metricP95">0.00</td>
-                    </tr>
-                    <tr>
-                      <td class="metric-name"><i class="fa-solid fa-percent"></i> 90th Percentile</td>
-                      <td class="metric-val" id="metricP90">0.00</td>
-                      <td class="metric-name"><i class="fa-solid fa-percent"></i> 75th Percentile (Q3)</td>
-                      <td class="metric-val" id="metricP75">0.00</td>
-                    </tr>
-                    <tr>
-                      <td class="metric-name"><i class="fa-solid fa-percent"></i> 25th Percentile (Q1)</td>
-                      <td class="metric-val" id="metricP25">0.00</td>
-                      <td class="metric-name"><i class="fa-solid fa-users-viewfinder"></i> Graded Count</td>
-                      <td class="metric-val" id="metricGradedCount">0</td>
-                    </tr>
-                  </tbody>
-                </table>
+          </div>
+        </div>
+        
+        <!-- Score Distribution Histogram (Left) -->
+        <div class="aws-card">
+          <div class="aws-card-header">
+            <h2>Score Distribution Histogram</h2>
+          </div>
+          <div class="aws-card-body chart-card-body">
+            <div class="chart-container">
+              <canvas id="scoreHistogramChart"></canvas>
+              <div id="noDataHistogram" class="chart-no-data hidden">
+                <i class="fa-solid fa-chart-bar"></i>
+                <p>No score data available.</p>
               </div>
             </div>
           </div>
-          
-          <!-- Participant Status / Grading Member Counts Chart -->
-          <div class="aws-card">
-            <div class="aws-card-header">
-              <h2>Grader Coverage</h2>
-              <i class="fa-solid fa-circle-question tooltip-trigger card-info-icon" data-tooltip="Shows breakdown of participants: resigned (empty note), ungraded (e.g. HPC), or graded by 1, 2, or 3 grading members. Sum matches total participants."></i>
-            </div>
-            <div class="aws-card-body chart-card-body">
-              <div class="chart-container">
-                <canvas id="graderCountDistributionChart"></canvas>
-              </div>
-            </div>
-          </div>
-          
         </div>
 
-        <!-- Right Side: Analytics Charts -->
-        <div class="dashboard-col-right">
-          
-          <!-- Score Distribution Histogram -->
-          <div class="aws-card">
-            <div class="aws-card-header">
-              <h2>Score Distribution Histogram</h2>
-              <span class="chart-subtitle">Bin size = 1, Range: 0 to 100</span>
-            </div>
-            <div class="aws-card-body chart-card-body">
-              <div class="chart-container">
-                <canvas id="scoreHistogramChart"></canvas>
-                <div id="noDataHistogram" class="chart-no-data hidden">
-                  <i class="fa-solid fa-chart-bar"></i>
-                  <p>No score data available.</p>
-                </div>
-              </div>
+        <!-- Grader Coverage Card (Right) -->
+        <div class="aws-card">
+          <div class="aws-card-header">
+            <h2>Grader Coverage</h2>
+            <i class="fa-solid fa-circle-question tooltip-trigger card-info-icon" data-tooltip="Shows breakdown of participants: resigned (empty note or score = 0), ungraded (e.g. HPC), or graded by 1, 2, or 3 grading members. Sum matches total participants."></i>
+          </div>
+          <div class="aws-card-body chart-card-body">
+            <div class="chart-container">
+              <canvas id="graderCountDistributionChart"></canvas>
             </div>
           </div>
-          
         </div>
+        
       </div>
 
       <!-- Middle Grid: Grader and Time comparisons -->
@@ -341,20 +316,34 @@
         <div class="aws-card-body no-padding">
           <div class="table-wrapper">
             <table class="aws-table" id="participantsTable">
+              <colgroup>
+                <col style="width: 60px;">
+                <col style="width: 90px;">
+                <col style="width: 100px;">
+                <col style="width: 100px;">
+                <col style="width: 80px;">
+                <col style="width: 110px;">
+                <col style="width: 220px;">
+                <col style="width: 110px;">
+                <col style="width: 100px;">
+                <col style="width: 110px;">
+                <col style="width: 80px;">
+                <col style="width: 100px;">
+              </colgroup>
               <thead>
                 <tr>
-                  <th style="width: 60px;">Rank</th>
-                  <th style="width: 90px;">Percentile</th>
+                  <th>Rank</th>
+                  <th>Percentile</th>
                   <th>Board</th>
-                  <th style="width: 100px;">Session</th>
-                  <th style="width: 70px;">Date</th>
-                  <th style="width: 110px;">Time Slot</th>
+                  <th>Session</th>
+                  <th>Date</th>
+                  <th>Time Slot</th>
                   <th>Participant Name</th>
                   <th>Phone</th>
-                  <th style="width: 110px;">Project ID</th>
+                  <th>Project ID</th>
                   <th>Mentor Unit</th>
                   <th>Note</th>
-                  <th style="text-align: right; width: 100px;">Final Score</th>
+                  <th style="text-align: right;">Final Score</th>
                 </tr>
               </thead>
               <tbody id="tableBody">
