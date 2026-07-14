@@ -1291,14 +1291,21 @@ function renderVarianceCorrelationChart() {
 }
 
 /**
- * Creates a new chart or destroys the previous instance if it already exists.
+ * Creates a new chart or updates the previous instance if it already exists to animate updates.
  */
 function createOrUpdateChart(id, config) {
-  if (state.charts[id]) {
-    state.charts[id].destroy();
+  const chartInstance = state.charts[id];
+  if (chartInstance) {
+    chartInstance.data.labels = config.data.labels || [];
+    chartInstance.data.datasets = config.data.datasets || [];
+    if (config.options) {
+      chartInstance.options = config.options;
+    }
+    chartInstance.update();
+  } else {
+    const ctx = document.getElementById(id).getContext('2d');
+    state.charts[id] = new Chart(ctx, config);
   }
-  const ctx = document.getElementById(id).getContext('2d');
-  state.charts[id] = new Chart(ctx, config);
 }
 
 /**
