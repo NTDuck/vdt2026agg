@@ -543,6 +543,9 @@ function parseWorkbookData(wb) {
         
         participant.graderCount = graderCount;
         participant.finalScore = finalScore;
+        if (finalScore === 0.0) {
+          participant.isResigned = true;
+        }
         participant.graders = [
           { name: grader1Name, total: g1_total || 0.0, graded: g1_graded, criteria: g1_criteria },
           { name: grader2Name, total: g2_total || 0.0, graded: g2_graded, criteria: g2_criteria },
