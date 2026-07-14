@@ -20,6 +20,7 @@ const state = {
   interpolateScore: false,
   includeResigned: false,
   currentPage: 1,      // Pagination state: page index starting at 1
+  prevPage: 1,         // Previous page to calculate scroll transition direction
   theme: 'dark',       // Default theme, will be adjusted dynamically
   charts: {},          // ChartJS instances
   lastUpdated: ''
@@ -115,10 +116,10 @@ document.addEventListener('DOMContentLoaded', () => {
 async function initApp() {
   setupEventListeners();
   loadSavedSettings();
-  
+
   // Pre-fill Spreadsheet URL input field
   document.getElementById('sheetUrlInput').value = state.spreadsheetUrl;
-  
+
   // Load initial dataset (prefer cache, then pre-compiled static JSON, then fetch live)
   await loadInitialData();
 }
@@ -143,7 +144,7 @@ function setupEventListeners() {
       trackTabs.forEach(el => el.classList.remove('active'));
       const btn = e.currentTarget;
       btn.classList.add('active');
-      
+
       const track = btn.getAttribute('data-track');
       changeTrack(track);
     });
@@ -208,11 +209,11 @@ function setupEventListeners() {
       showToast('Error', 'Invalid Google Sheets URL. Could not parse Spreadsheet ID.', 'danger');
       return;
     }
-    
+
     state.spreadsheetId = extractedId;
     state.spreadsheetUrl = inputVal.includes('docs.google.com') ? inputVal : `https://docs.google.com/spreadsheets/d/${extractedId}/edit`;
     saveSettings();
-    
+
     fetchSpreadsheetLive();
   });
 
@@ -222,11 +223,11 @@ function setupEventListeners() {
     state.spreadsheetId = DEFAULT_SPREADSHEET_ID;
     state.spreadsheetUrl = DEFAULT_SPREADSHEET_URL;
     document.getElementById('sheetUrlInput').value = DEFAULT_SPREADSHEET_URL;
-    
+
     localStorage.removeItem('vdt2026_custom_data');
     localStorage.removeItem('vdt2026_sheet_id');
     localStorage.removeItem('vdt2026_sheet_url');
-    
+
     showToast('Info', 'Reset to default spreadsheet. Reloading data...', 'info');
     loadInitialData();
   });
@@ -270,11 +271,50 @@ function setupEventListeners() {
     }
   });
 
+  // Table wrapper scroll pagination
+  const tableWrapper = document.querySelector('.table-wrapper');
+  if (tableWrapper) {
+    let lastScrollTop = tableWrapper.scrollTop;
+    let scrollCooldown = false;
+    
+    tableWrapper.addEventListener('scroll', () => {
+      if (scrollCooldown) return;
+      
+      const { scrollTop, scrollHeight, clientHeight } = tableWrapper;
+      
+      if (scrollTop + clientHeight >= scrollHeight - 3) {
+        const totalRecords = getFilteredListCount();
+        const totalPages = Math.ceil(totalRecords / 10) || 1;
+        if (state.currentPage < totalPages) {
+          scrollCooldown = true;
+          state.currentPage++;
+          renderTableOnly();
+          tableWrapper.scrollTop = 4;
+          setTimeout(() => { scrollCooldown = false; }, 400);
+        }
+      }
+      else if (scrollTop <= 1 && lastScrollTop > scrollTop) {
+        if (state.currentPage > 1) {
+          scrollCooldown = true;
+          state.currentPage--;
+          renderTableOnly();
+          tableWrapper.scrollTop = tableWrapper.scrollHeight - tableWrapper.clientHeight - 4;
+          setTimeout(() => { scrollCooldown = false; }, 400);
+        }
+      }
+      
+      lastScrollTop = tableWrapper.scrollTop;
+    });
+  }
+
   // Close toast alert
   const alertCloseBtn = document.getElementById('alertCloseBtn');
   alertCloseBtn.addEventListener('click', () => {
     document.getElementById('toastAlert').classList.add('hidden');
   });
+
+  // Track tab highlights window resize syncing
+  window.addEventListener('resize', updateTabHighlight);
 }
 
 /**
@@ -310,7 +350,7 @@ function getChartThemeColors() {
  */
 async function loadInitialData() {
   showLoadingState();
-  
+
   const cachedData = localStorage.getItem('vdt2026_custom_data');
   if (cachedData) {
     try {
@@ -318,7 +358,7 @@ async function loadInitialData() {
       state.allParticipants = data.all_participants;
       normalizeParticipants(state.allParticipants);
       state.lastUpdated = data.lastUpdated || 'Loaded from local cache';
-      
+
       updateLastUpdatedDisplay(state.lastUpdated);
       renderAll();
       showToast('Success', 'Successfully loaded data from local cache.', 'success');
@@ -335,7 +375,7 @@ async function loadInitialData() {
       state.allParticipants = data.all_participants;
       normalizeParticipants(state.allParticipants);
       state.lastUpdated = 'Preloaded static dataset (2026-07-13)';
-      
+
       updateLastUpdatedDisplay(state.lastUpdated);
       renderAll();
       return;
@@ -356,25 +396,25 @@ async function fetchSpreadsheetLive() {
   refreshBtn.disabled = true;
   refreshBtn.querySelector('i').classList.add('fa-spin');
   refreshBtn.querySelector('span').innerText = 'Syncing...';
-  
+
   const exportUrl = `https://docs.google.com/spreadsheets/d/${state.spreadsheetId}/export?format=xlsx`;
-  
+
   try {
     const response = await fetch(exportUrl);
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    
+
     const arrayBuffer = await response.arrayBuffer();
     const workbook = XLSX.read(arrayBuffer, { type: 'array', cellDates: true });
-    
+
     parseWorkbookData(workbook);
-    
+
     state.lastUpdated = `Synced live at ${new Date().toLocaleTimeString()} on ${new Date().toLocaleDateString()}`;
     const cacheObject = {
       all_participants: state.allParticipants,
       lastUpdated: state.lastUpdated
     };
     localStorage.setItem('vdt2026_custom_data', JSON.stringify(cacheObject));
-    
+
     updateLastUpdatedDisplay(state.lastUpdated);
     state.currentPage = 1;
     renderAll();
@@ -382,7 +422,7 @@ async function fetchSpreadsheetLive() {
   } catch (error) {
     console.error('Error fetching live spreadsheet:', error);
     showToast('Sync Failed', `Could not connect to Google Sheets. Please check your URL. Error: ${error.message}`, 'danger');
-    
+
     if (state.allParticipants.length > 0) {
       renderAll();
     } else {
@@ -406,15 +446,15 @@ async function fetchSpreadsheetLive() {
  */
 function parseWorkbookData(wb) {
   const parsedParticipants = [];
-  const activeSheets = wb.SheetNames.filter(name => 
+  const activeSheets = wb.SheetNames.filter(name =>
     name.startsWith('System') || name.startsWith('Web') || name.startsWith('HPC')
   );
-  
+
   activeSheets.forEach(sheetName => {
     const sheet = wb.Sheets[sheetName];
     const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null });
     if (rows.length < 2) return;
-    
+
     // Find the header row dynamically by searching for the "Họ tên SV" column
     let headerRowIdx = -1;
     for (let i = 0; i < Math.min(10, rows.length); i++) {
@@ -424,22 +464,22 @@ function parseWorkbookData(wb) {
         break;
       }
     }
-    
+
     if (headerRowIdx === -1) {
       console.warn(`Could not find header row in sheet ${sheetName}`);
       return;
     }
-    
+
     const headers = rows[headerRowIdx];
     const row0 = headerRowIdx > 0 ? rows[headerRowIdx - 1] : [];
-    
+
     const finalIdx = headers.findIndex(h => h && String(h).trim().toLowerCase() === 'final score');
     const hasGrading = finalIdx !== -1;
-    
+
     let grader1Name = "Grader 1";
     let grader2Name = "Grader 2";
     let grader3Name = "Grader 3";
-    
+
     // Find grader total columns ('Tổng kết') dynamically
     const totalIndices = [];
     headers.forEach((h, idx) => {
@@ -447,25 +487,25 @@ function parseWorkbookData(wb) {
         totalIndices.push(idx);
       }
     });
-    
+
     if (hasGrading && totalIndices.length >= 3) {
       if (row0.length > totalIndices[0] - 6 && row0[totalIndices[0] - 6]) grader1Name = String(row0[totalIndices[0] - 6]).trim();
       if (row0.length > totalIndices[1] - 6 && row0[totalIndices[1] - 6]) grader2Name = String(row0[totalIndices[1] - 6]).trim();
       if (row0.length > totalIndices[2] - 6 && row0[totalIndices[2] - 6]) grader3Name = String(row0[totalIndices[2] - 6]).trim();
     }
-    
+
     for (let r = headerRowIdx + 1; r < rows.length; r++) {
       const row = rows[r];
       if (!row || row.length < 5 || !row[4] || String(row[4]).trim() === '') continue;
-      
+
       const board = row[0] ? String(row[0]).trim() : sheetName;
       let session = row[1] ? String(row[1]).trim() : '';
-      
+
       // Normalize and translate session name to English
       if (session === 'Chiểu') session = 'Chiều';
       if (session === 'Sáng') session = 'Morning';
       if (session === 'Chiều') session = 'Afternoon';
-      
+
       let dateStr = '';
       const dateVal = row[2];
       if (dateVal instanceof Date) {
@@ -479,10 +519,10 @@ function parseWorkbookData(wb) {
           dateStr = `${parts[2]}/${parts[1]}`;
         }
       }
-      
+
       const timeSlot = row[3] ? String(row[3]).trim() : '';
       const studentName = String(row[4]).trim();
-      
+
       let phoneStr = '';
       const phoneVal = row[5];
       if (phoneVal) {
@@ -494,7 +534,7 @@ function parseWorkbookData(wb) {
           phoneStr = '0' + phoneStr;
         }
       }
-      
+
       let projectCode = '';
       if (row.length > 6 && row[6] !== null) {
         projectCode = String(row[6]).trim();
@@ -502,11 +542,11 @@ function parseWorkbookData(wb) {
           projectCode = String(Math.floor(parseFloat(projectCode)));
         }
       }
-      
+
       const mentorUnit = row.length > 7 && row[7] ? String(row[7]).trim() : '';
       const note = row.length > 8 && row[8] ? String(row[8]).trim() : '';
       const isResigned = (note === '');
-      
+
       const participant = {
         board: board,
         session: session,
@@ -520,7 +560,7 @@ function parseWorkbookData(wb) {
         isResigned: isResigned,
         hasGrading: hasGrading
       };
-      
+
       if (hasGrading && totalIndices.length >= 3) {
         const idx1 = totalIndices[0];
         const g1_criteria = row.slice(idx1 - 6, idx1);
@@ -529,7 +569,7 @@ function parseWorkbookData(wb) {
         if (g1_graded) {
           g1_total = isNumeric(row[idx1]) ? parseFloat(row[idx1]) : g1_criteria.reduce((s, c) => s + parseFloat(c), 0);
         }
-        
+
         const idx2 = totalIndices[1];
         const g2_criteria = row.slice(idx2 - 6, idx2);
         const g2_graded = g2_criteria.every(isNumeric);
@@ -537,7 +577,7 @@ function parseWorkbookData(wb) {
         if (g2_graded) {
           g2_total = isNumeric(row[idx2]) ? parseFloat(row[idx2]) : g2_criteria.reduce((s, c) => s + parseFloat(c), 0);
         }
-        
+
         const idx3 = totalIndices[2];
         const g3_criteria = row.slice(idx3 - 6, idx3);
         const g3_graded = g3_criteria.every(isNumeric);
@@ -545,12 +585,12 @@ function parseWorkbookData(wb) {
         if (g3_graded) {
           g3_total = isNumeric(row[idx3]) ? parseFloat(row[idx3]) : g3_criteria.reduce((s, c) => s + parseFloat(c), 0);
         }
-        
+
         const graderCount = [g1_graded, g2_graded, g3_graded].filter(Boolean).length;
-        
+
         let finalScore = parseFloat(row[finalIdx]);
         if (isNaN(finalScore)) finalScore = 0.0;
-        
+
         participant.graderCount = graderCount;
         participant.finalScore = finalScore;
         if (finalScore === 0.0) {
@@ -566,11 +606,11 @@ function parseWorkbookData(wb) {
         participant.finalScore = null;
         participant.graders = [];
       }
-      
+
       parsedParticipants.push(participant);
     }
   });
-  
+
   normalizeParticipants(parsedParticipants);
   state.allParticipants = parsedParticipants;
 }
@@ -581,7 +621,7 @@ function parseWorkbookData(wb) {
 function changeTrack(track) {
   state.activeTrack = track;
   state.activeBoard = 'all';
-  
+
   // Sync the track tabs active state
   const trackTabs = document.querySelectorAll('.track-tab');
   trackTabs.forEach(tab => {
@@ -591,10 +631,10 @@ function changeTrack(track) {
       tab.classList.remove('active');
     }
   });
-  
-  document.getElementById('dashboardTitle').innerText = 
+
+  document.getElementById('dashboardTitle').innerText =
     track === 'SwE' ? 'MiniProject Evaluations' : `${track} Evaluations`;
-  
+
   state.currentPage = 1;
   renderAll();
 }
@@ -605,28 +645,28 @@ function changeTrack(track) {
 function rebuildBoardFilterDropdown() {
   const boardFilterSelect = document.getElementById('boardFilterSelect');
   if (!boardFilterSelect) return;
-  
+
   const currentValue = state.activeBoard;
   boardFilterSelect.innerHTML = '<option value="all">All Boards</option>';
-  
+
   const activeBoards = new Set();
   state.allParticipants.forEach(p => {
     if (isInActiveTrack(p)) {
       activeBoards.add(p.board);
     }
   });
-  
+
   const sortedBoards = Array.from(activeBoards).sort((a, b) => {
     return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
   });
-  
+
   sortedBoards.forEach(board => {
     const opt = document.createElement('option');
     opt.value = board;
     opt.innerText = board;
     boardFilterSelect.appendChild(opt);
   });
-  
+
   if (activeBoards.has(currentValue)) {
     boardFilterSelect.value = currentValue;
   } else {
@@ -652,15 +692,15 @@ function isInActiveTrack(p) {
 function getParticipantScore(p, interpolate) {
   if (!p.hasGrading) return null;
   if (p.isResigned) return 0.0;
-  
+
   if (!interpolate) {
     return p.finalScore;
   }
-  
+
   // Interpolated: Average of only valid evaluations (matches vsd score formula)
   const gradedScores = p.graders.filter(g => g.graded).map(g => g.total);
   if (gradedScores.length === 0) return 0.0;
-  
+
   const sum = gradedScores.reduce((acc, curr) => acc + curr, 0);
   return sum / gradedScores.length;
 }
@@ -670,15 +710,15 @@ function getParticipantScore(p, interpolate) {
  */
 function getActiveTrackParticipants() {
   let list = state.allParticipants.filter(p => isInActiveTrack(p));
-  
+
   if (!state.includeResigned) {
     list = list.filter(p => !p.isResigned);
   }
-  
+
   list.forEach(p => {
     p.tempScore = getParticipantScore(p, state.interpolateScore);
   });
-  
+
   return list;
 }
 
@@ -694,11 +734,15 @@ function renderAll() {
   rebuildBoardFilterDropdown();
   renderQuickStats();
   renderMetricsTable();
+  renderTableOnly();
   renderDistributionChart();
   renderGraderBreakdownChart();
   renderGraderComparisonChart();
   renderTimeChart();
-  renderTableOnly();
+  renderVarianceCorrelationChart();
+
+  // Update sliding tab position
+  updateTabHighlight();
 }
 
 /**
@@ -708,11 +752,11 @@ function renderQuickStats() {
   const participants = getActiveTrackParticipants();
   const total = participants.length;
   const resigned = participants.filter(p => p.isResigned).length;
-  
+
   const graded = participants.filter(p => p.hasGrading ? p.graderCount > 0 : !p.isResigned).length;
-  
+
   const gradedPart = participants.filter(p => p.tempScore !== null);
-  
+
   let avg = 0;
   if (gradedPart.length > 0) {
     const sum = gradedPart.reduce((acc, p) => acc + p.tempScore, 0);
@@ -722,7 +766,7 @@ function renderQuickStats() {
   animateUpdateText(document.getElementById('statTotalStudents'), total);
   animateUpdateText(document.getElementById('statGradedStudents'), graded);
   animateUpdateText(document.getElementById('statResignedStudents'), resigned);
-  
+
   const avgEl = document.getElementById('statAverageScore');
   if (avgEl) {
     animateUpdateText(avgEl, avg.toFixed(2));
@@ -734,13 +778,13 @@ function renderQuickStats() {
  */
 function renderMetricsTable() {
   const participants = getActiveTrackParticipants();
-  
+
   const scores = participants
     .filter(p => p.tempScore !== null)
     .map(p => p.tempScore);
-    
+
   const stats = calculateStats(scores);
-  
+
   animateUpdateText(document.getElementById('metricMean'), stats.mean.toFixed(2));
   animateUpdateText(document.getElementById('metricMax'), stats.max.toFixed(2));
   animateUpdateText(document.getElementById('metricMedian'), stats.median.toFixed(2));
@@ -760,26 +804,26 @@ function calculateStats(scores) {
   if (scores.length === 0) {
     return { mean: 0, max: 0, median: 0, min: 0, std: 0, p25: 0, p75: 0, p90: 0, p95: 0 };
   }
-  
+
   const sorted = [...scores].sort((a, b) => a - b);
   const n = sorted.length;
-  
+
   const min = sorted[0];
   const max = sorted[n - 1];
-  
+
   const sum = sorted.reduce((a, b) => a + b, 0);
   const mean = sum / n;
-  
+
   const median = percentileInc(sorted, 0.5);
-  
+
   const variance = sorted.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / n;
   const std = Math.sqrt(variance);
-  
+
   const p25 = percentileInc(sorted, 0.25);
   const p75 = percentileInc(sorted, 0.75);
   const p90 = percentileInc(sorted, 0.90);
   const p95 = percentileInc(sorted, 0.95);
-  
+
   return { mean, max, median, min, std, p25, p75, p90, p95 };
 }
 
@@ -789,14 +833,14 @@ function calculateStats(scores) {
 function renderDistributionChart() {
   const participants = getActiveTrackParticipants();
   const colors = getChartThemeColors();
-  
+
   const scores = participants
     .filter(p => p.tempScore !== null)
     .map(p => p.tempScore);
 
   const canvasId = 'scoreHistogramChart';
   const noDataEl = document.getElementById('noDataHistogram');
-  
+
   if (scores.length === 0) {
     document.getElementById(canvasId).style.visibility = 'hidden';
     noDataEl.classList.remove('hidden');
@@ -816,14 +860,14 @@ function renderDistributionChart() {
 
   const labels = [];
   const bins = [];
-  
+
   for (let i = 0; i <= 100; i += B) {
     if (i === 100 && B > 1) break;
     const start = i;
     const end = Math.min(100, i + B - 1);
     const label = start === end ? `${start}` : `${start}-${end}`;
     labels.push(label);
-    
+
     const count = scores.filter(s => {
       const val = Math.floor(s);
       if (end < 100) {
@@ -844,7 +888,7 @@ function renderDistributionChart() {
         data: bins,
         backgroundColor: 'rgba(0, 115, 187, 0.75)',
         borderColor: '#0073bb',
-        borderWidth: 1,
+        borderWidth: 0,
         barPercentage: 1.0,
         categoryPercentage: 1.0
       }]
@@ -901,7 +945,7 @@ function renderDistributionChart() {
 function renderGraderBreakdownChart() {
   const participants = getActiveTrackParticipants();
   const colors = getChartThemeColors();
-  
+
   const counts = { resigned: 0, g0: 0, g1: 0, g2: 0, g3: 0 };
   participants.forEach(p => {
     if (p.isResigned) {
@@ -941,7 +985,7 @@ function renderGraderBreakdownChart() {
         borderColor: [
           '#df3e3e', '#64748b', '#f89406', '#0073bb', '#2ea85a'
         ],
-        borderWidth: 1
+        borderWidth: 0
       }]
     },
     options: {
@@ -984,9 +1028,9 @@ function renderGraderBreakdownChart() {
 function renderGraderComparisonChart() {
   const participants = getActiveTrackParticipants();
   const colors = getChartThemeColors();
-  
+
   const graderScores = {};
-  
+
   participants.forEach(p => {
     if (!p.hasGrading || p.isResigned) return;
     p.graders.forEach(g => {
@@ -1033,7 +1077,7 @@ function renderGraderComparisonChart() {
         data: gradersList.map(g => g.avg.toFixed(2)),
         backgroundColor: 'rgba(0, 115, 187, 0.75)',
         borderColor: '#0073bb',
-        borderWidth: 1
+        borderWidth: 0
       }]
     },
     options: {
@@ -1081,8 +1125,8 @@ function renderGraderComparisonChart() {
 function renderTimeChart() {
   const participants = getActiveTrackParticipants();
   const colors = getChartThemeColors();
-  
-  const gradedPart = participants.filter(p => 
+
+  const gradedPart = participants.filter(p =>
     p.tempScore !== null && !p.isResigned
   );
 
@@ -1105,7 +1149,7 @@ function renderTimeChart() {
 
   const compareBy = document.getElementById('timeCompareSelect').value;
   const groups = {};
-  
+
   gradedPart.forEach(p => {
     let key = '';
     if (compareBy === 'session') {
@@ -1115,7 +1159,7 @@ function renderTimeChart() {
     } else {
       key = p.timeSlot || 'N/A';
     }
-    
+
     if (!groups[key]) {
       groups[key] = { sum: 0, count: 0 };
     }
@@ -1124,7 +1168,7 @@ function renderTimeChart() {
   });
 
   const keys = Object.keys(groups);
-  
+
   keys.sort((a, b) => {
     if (compareBy === 'session') {
       if (a === 'Morning') return -1;
@@ -1148,7 +1192,7 @@ function renderTimeChart() {
         data: chartData.map(d => d.avg.toFixed(2)),
         backgroundColor: 'rgba(46, 168, 90, 0.75)',
         borderColor: '#2ea85a',
-        borderWidth: 1
+        borderWidth: 0
       }]
     },
     options: {
@@ -1191,6 +1235,112 @@ function renderTimeChart() {
 }
 
 /**
+ * Chart 5: Standard Deviation of 3 Grades vs Standing Rank (Scatter plot)
+ */
+function renderVarianceCorrelationChart() {
+  const participants = getActiveTrackParticipants();
+  const colors = getChartThemeColors();
+  
+  const scatterData = [];
+  participants.forEach(p => {
+    if (p.isResigned || !p.hasGrading || !p.rank) return;
+    
+    // Fully graded check: must have exactly 3 graders, all graded
+    if (!p.graders || p.graders.length !== 3) return;
+    if (!p.graders[0].graded || !p.graders[1].graded || !p.graders[2].graded) return;
+    
+    const s1 = Number(p.graders[0].total) || 0;
+    const s2 = Number(p.graders[1].total) || 0;
+    const s3 = Number(p.graders[2].total) || 0;
+    
+    const mean = (s1 + s2 + s3) / 3;
+    const std = Math.sqrt(((s1 - mean)**2 + (s2 - mean)**2 + (s3 - mean)**2) / 3);
+    
+    scatterData.push({
+      x: p.rank,
+      y: std,
+      studentName: p.studentName,
+      meanScore: mean
+    });
+  });
+
+  const canvasId = 'graderVarianceCorrelationChart';
+  const noDataEl = document.getElementById('noDataCorrelation');
+
+  if (scatterData.length === 0) {
+    document.getElementById(canvasId).style.visibility = 'hidden';
+    noDataEl.classList.remove('hidden');
+    if (state.charts[canvasId]) {
+      state.charts[canvasId].destroy();
+      state.charts[canvasId] = null;
+    }
+    return;
+  } else {
+    document.getElementById(canvasId).style.visibility = 'visible';
+    noDataEl.classList.add('hidden');
+  }
+
+  createOrUpdateChart(canvasId, {
+    type: 'scatter',
+    data: {
+      datasets: [{
+        data: scatterData.map(d => ({ x: d.x, y: d.y })),
+        backgroundColor: 'rgba(0, 115, 187, 0.75)',
+        borderColor: 'rgba(0, 115, 187, 0.9)',
+        borderWidth: 0,
+        pointRadius: 6,
+        pointHoverRadius: 8
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: colors.tooltipBg,
+          titleColor: colors.tooltipTitle,
+          bodyColor: colors.tooltipBody,
+          borderColor: colors.tooltipBorder,
+          borderWidth: 1,
+          cornerRadius: 6,
+          titleFont: { family: 'Amazon Ember', size: 11, weight: 'bold' },
+          bodyFont: { family: 'Amazon Ember', size: 11 },
+          displayColors: false,
+          callbacks: {
+            title: (items) => {
+              const idx = items[0].dataIndex;
+              return scatterData[idx].studentName;
+            },
+            label: (item) => {
+              const idx = item.dataIndex;
+              const pt = scatterData[idx];
+              return [
+                `Rank: ${pt.x}`,
+                `Grader Std Dev: ${pt.y.toFixed(2)}`,
+                `Final Score (Mean): ${pt.meanScore.toFixed(2)}`
+              ];
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          title: { display: true, text: 'Standing Rank (Lower is better)', color: colors.text, font: { family: 'Amazon Ember', size: 9, weight: 600 } },
+          grid: { color: colors.grid },
+          ticks: { color: colors.text, font: { family: 'Amazon Ember', size: 9 } }
+        },
+        y: {
+          title: { display: true, text: 'Standard Deviation of Grades', color: colors.text, font: { family: 'Amazon Ember', size: 9, weight: 600 } },
+          grid: { color: colors.grid },
+          ticks: { color: colors.text, font: { family: 'Amazon Ember', size: 9 } }
+        }
+      }
+    }
+  });
+}
+
+/**
  * Creates a new chart or destroys the previous instance if it already exists.
  */
 function createOrUpdateChart(id, config) {
@@ -1207,28 +1357,28 @@ function createOrUpdateChart(id, config) {
 function getFilteredListCount() {
   const trackPart = getActiveTrackParticipants();
   const searchNorm = removeDiacritics(state.searchQuery.toLowerCase());
-  
+
   const filteredList = trackPart.filter(p => {
     if (state.activeBoard !== 'all' && p.board !== state.activeBoard) {
       return false;
     }
-    
+
     if (searchNorm !== '') {
       const nameNorm = removeDiacritics(p.studentName.toLowerCase());
       const phone = p.phone.toLowerCase();
       const code = p.projectCode.toLowerCase();
       const unit = p.mentorUnit.toLowerCase();
-      
-      const match = nameNorm.includes(searchNorm) || 
-                    phone.includes(searchNorm) || 
-                    code.includes(searchNorm) || 
+
+      const match = nameNorm.includes(searchNorm) ||
+                    phone.includes(searchNorm) ||
+                    code.includes(searchNorm) ||
                     unit.includes(searchNorm);
       if (!match) return false;
     }
-    
+
     return true;
   });
-  
+
   return filteredList.length;
 }
 
@@ -1239,17 +1389,17 @@ function getFilteredListCount() {
 function renderTableOnly() {
   const tableBody = document.getElementById('tableBody');
   const tableEmptyState = document.getElementById('tableEmptyState');
-  
+
   const trackPart = getActiveTrackParticipants();
-  
+
   // Filter cohort for ranking
-  const gradedPart = trackPart.filter(p => 
+  const gradedPart = trackPart.filter(p =>
     p.tempScore !== null && (state.includeResigned || !p.isResigned)
   );
-  
+
   // Sort descending
   gradedPart.sort((a, b) => b.tempScore - a.tempScore);
-  
+
   // Assign Dense Ranks
   let rankTracker = 1;
   gradedPart.forEach((p, idx) => {
@@ -1258,14 +1408,14 @@ function renderTableOnly() {
     }
     p.rank = rankTracker;
   });
-  
+
   // Assign Percentile Rank (1 - percentRankInc) * 100
   const sortedScoresAsc = gradedPart.map(p => p.tempScore).sort((a, b) => a - b);
   gradedPart.forEach(p => {
     const rankPercent = percentRankInc(sortedScoresAsc, p.tempScore);
     p.percentile = ((1 - rankPercent) * 100).toFixed(1);
   });
-  
+
   trackPart.forEach(p => {
     const isEvaluated = gradedPart.includes(p);
     if (!isEvaluated) {
@@ -1273,7 +1423,7 @@ function renderTableOnly() {
       p.percentile = null;
     }
   });
-  
+
   const sortedTrackPart = [...trackPart].sort((a, b) => {
     if (a.tempScore === null && b.tempScore === null) return 0;
     if (a.tempScore === null) return 1;
@@ -1282,29 +1432,29 @@ function renderTableOnly() {
   });
 
   const searchNorm = removeDiacritics(state.searchQuery.toLowerCase());
-  
+
   const filteredList = sortedTrackPart.filter(p => {
     if (state.activeBoard !== 'all' && p.board !== state.activeBoard) {
       return false;
     }
-    
+
     if (searchNorm !== '') {
       const nameNorm = removeDiacritics(p.studentName.toLowerCase());
       const phone = p.phone.toLowerCase();
       const code = p.projectCode.toLowerCase();
       const unit = p.mentorUnit.toLowerCase();
-      
-      const match = nameNorm.includes(searchNorm) || 
-                    phone.includes(searchNorm) || 
-                    code.includes(searchNorm) || 
+
+      const match = nameNorm.includes(searchNorm) ||
+                    phone.includes(searchNorm) ||
+                    code.includes(searchNorm) ||
                     unit.includes(searchNorm);
       if (!match) return false;
     }
-    
+
     return true;
   });
 
-  document.getElementById('tableRecordCount').innerText = `${filteredList.length} records found`;
+  document.getElementById('tableRecordCount').innerText = `${filteredList.length} records`;
 
   if (filteredList.length === 0) {
     tableBody.innerHTML = '';
@@ -1312,14 +1462,14 @@ function renderTableOnly() {
     document.getElementById('tablePaginationFooter').style.display = 'none';
     return;
   }
-  
+
   tableEmptyState.classList.add('hidden');
   document.getElementById('tablePaginationFooter').style.display = 'flex';
-  
+
   // Calculate total pages for 10 records pagination
   const ITEMS_PER_PAGE = 10;
   const totalPages = Math.ceil(filteredList.length / ITEMS_PER_PAGE) || 1;
-  
+
   // Bounding currentPage state
   if (state.currentPage > totalPages) {
     state.currentPage = totalPages;
@@ -1327,18 +1477,25 @@ function renderTableOnly() {
   if (state.currentPage < 1) {
     state.currentPage = 1;
   }
-  
+
   const start = (state.currentPage - 1) * ITEMS_PER_PAGE;
   const end = start + ITEMS_PER_PAGE;
   const pageList = filteredList.slice(start, end);
+
+  let animClass = 'fade-in-row';
+  if (state.currentPage > state.prevPage) {
+    animClass = 'slide-up-row';
+  } else if (state.currentPage < state.prevPage) {
+    animClass = 'slide-down-row';
+  }
 
   let html = '';
   pageList.forEach(p => {
     const badgeClass = UNIT_BADGE_CLASSES[p.mentorUnit.toUpperCase()] || 'badge-default';
     const scoreText = p.tempScore !== null ? p.tempScore.toFixed(2) : '<span class="resigned-text">N/A (Ungraded)</span>';
     const rankText = p.rank !== null ? p.rank : '<span class="resigned-text">-</span>';
-    const pctText = p.percentile !== null ? `Top ${p.percentile}%` : '<span class="resigned-text">-</span>';
-    
+    const pctText = p.percentile !== null ? `${p.percentile}%` : '<span class="resigned-text">-</span>';
+
     let noteHtml = '';
     if (p.note) {
       const cleanNote = String(p.note).trim();
@@ -1350,17 +1507,23 @@ function renderTableOnly() {
     } else {
       noteHtml = `<span class="resigned-text">Resigned</span>`;
     }
-    
-    const rowClass = p.isResigned ? 'resigned-row' : '';
+
+    const boardBadge = `<span class="unit-badge badge-board">${p.board}</span>`;
+    const sessionClass = p.session === 'Morning' ? 'badge-session-morning' : 'badge-session-afternoon';
+    const sessionBadge = `<span class="unit-badge ${sessionClass}">${p.session}</span>`;
+    const dateBadge = `<span class="unit-badge badge-date">${p.date}</span>`;
+    const slotBadge = `<span class="unit-badge badge-slot">${p.timeSlot}</span>`;
+
+    const rowClass = (p.isResigned ? 'resigned-row ' : '') + animClass;
 
     html += `
       <tr class="${rowClass}">
         <td class="rank-col">${rankText}</td>
         <td class="percentile-col">${pctText}</td>
-        <td>${p.board}</td>
-        <td>${p.session}</td>
-        <td>${p.date}</td>
-        <td>${p.timeSlot}</td>
+        <td>${boardBadge}</td>
+        <td>${sessionBadge}</td>
+        <td>${dateBadge}</td>
+        <td>${slotBadge}</td>
         <td class="student-name-col">${p.studentName}</td>
         <td>${p.phone}</td>
         <td style="text-align: center;">${p.projectCode}</td>
@@ -1370,13 +1533,15 @@ function renderTableOnly() {
       </tr>
     `;
   });
-  
+
   tableBody.innerHTML = html;
-  
+
   // Render pagination indicator and buttons states
   document.getElementById('paginationInfo').innerText = `Page ${state.currentPage} of ${totalPages}`;
   document.getElementById('prevPageBtn').disabled = state.currentPage === 1;
   document.getElementById('nextPageBtn').disabled = state.currentPage === totalPages;
+  
+  state.prevPage = state.currentPage;
 }
 
 /**
@@ -1419,9 +1584,9 @@ function showToast(title, desc, type = 'info') {
   const tTitle = document.getElementById('alertTitle');
   const tDesc = document.getElementById('alertDesc');
   const tIcon = document.getElementById('alertIcon');
-  
+
   toast.className = 'aws-alert';
-  
+
   if (type === 'success') {
     toast.classList.add('alert-success');
     tIcon.className = 'fa-solid fa-circle-check';
@@ -1434,12 +1599,12 @@ function showToast(title, desc, type = 'info') {
   } else {
     tIcon.className = 'fa-solid fa-circle-info';
   }
-  
+
   tTitle.innerText = title;
   tDesc.innerText = desc;
-  
+
   toast.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  
+
   if (type !== 'danger') {
     setTimeout(() => {
       toast.classList.add('hidden');
@@ -1508,7 +1673,7 @@ function normalizeParticipants(list) {
     if (!p.note || String(p.note).trim() === '') {
       p.isResigned = true;
     }
-    
+
     // Normalize session translations
     if (p.session === 'Chiểu') p.session = 'Chiều';
     if (p.session === 'Sáng') p.session = 'Morning';
@@ -1525,4 +1690,22 @@ function animateUpdateText(el, text) {
   void el.offsetWidth; // Trigger reflow to restart CSS animation
   el.innerText = text;
   el.classList.add('animate-value-change');
+}
+
+/**
+ * Aligns the sliding track tab highlight position behind the active tab.
+ */
+function updateTabHighlight() {
+  const activeTab = document.querySelector('.track-tab.active');
+  const highlight = document.getElementById('tabHighlight');
+  if (activeTab && highlight) {
+    const left = activeTab.offsetLeft;
+    const width = activeTab.offsetWidth;
+    const height = activeTab.offsetHeight;
+    const top = activeTab.offsetTop;
+
+    highlight.style.width = `${width}px`;
+    highlight.style.height = `${height}px`;
+    highlight.style.transform = `translate3d(${left}px, ${top}px, 0)`;
+  }
 }

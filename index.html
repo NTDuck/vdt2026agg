@@ -38,6 +38,7 @@
     <div class="aws-header-left">
       <!-- Track tabs selector -->
       <div class="track-tabs">
+        <div class="tab-highlight" id="tabHighlight"></div>
         <button class="track-tab active" data-track="SwE" id="tab-SwE">All Tracks</button>
         <button class="track-tab" data-track="System" id="tab-System">System</button>
         <button class="track-tab" data-track="Web" id="tab-Web">Web Development</button>
@@ -117,15 +118,15 @@
 
       <!-- Dash Title & Sync -->
       <div class="dashboard-header-row animate-fade-in">
-        <div class="title-section" style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+        <div class="title-section">
+          <h1 id="dashboardTitle">MiniProject Evaluations</h1>
+          <span class="subtitle" id="lastUpdatedDisplay">Status: Preloaded static data</span>
+        </div>
+        <div class="action-section">
           <button id="refreshDataBtn" class="aws-btn aws-btn-primary">
             <i class="fa-solid fa-arrows-rotate"></i>
             <span>Refresh Data</span>
           </button>
-          <div>
-            <h1 id="dashboardTitle" style="margin: 0;">MiniProject Evaluations</h1>
-            <span class="subtitle" id="lastUpdatedDisplay">Status: Preloaded static data</span>
-          </div>
         </div>
       </div>
 
@@ -175,8 +176,8 @@
       <!-- Main Dashboard Grid Layout -->
       <div class="dashboard-grid">
         
-        <!-- Score Metrics Card (Span Full Width) -->
-        <div class="aws-card full-width-card">
+        <!-- Score Metrics Card -->
+        <div class="aws-card">
           <div class="aws-card-header">
             <h2>Score Metrics</h2>
           </div>
@@ -219,6 +220,19 @@
             </div>
           </div>
         </div>
+
+        <!-- Grader Coverage Card (Right of Score Metrics) -->
+        <div class="aws-card">
+          <div class="aws-card-header">
+            <h2>Grader Coverage</h2>
+            <i class="fa-solid fa-circle-question tooltip-trigger card-info-icon" data-tooltip="Shows breakdown of participants: resigned (empty note or score = 0), ungraded (e.g. HPC), or graded by 1, 2, or 3 grading members. Sum matches total participants."></i>
+          </div>
+          <div class="aws-card-body chart-card-body">
+            <div class="chart-container">
+              <canvas id="graderCountDistributionChart"></canvas>
+            </div>
+          </div>
+        </div>
         
         <!-- Score Distribution Histogram (Left) -->
         <div class="aws-card">
@@ -244,15 +258,19 @@
           </div>
         </div>
 
-        <!-- Grader Coverage Card (Right) -->
+        <!-- Grader Variance Correlation Card (Right of Histogram) -->
         <div class="aws-card">
           <div class="aws-card-header">
-            <h2>Grader Coverage</h2>
-            <i class="fa-solid fa-circle-question tooltip-trigger card-info-icon" data-tooltip="Shows breakdown of participants: resigned (empty note or score = 0), ungraded (e.g. HPC), or graded by 1, 2, or 3 grading members. Sum matches total participants."></i>
+            <h2>Grader Variance Correlation</h2>
+            <i class="fa-solid fa-circle-question tooltip-trigger card-info-icon" data-tooltip="Correlates the standard deviation of a participant's 3 grader scores with their standing rank. Only includes fully graded participants (all 3 evaluations completed)."></i>
           </div>
           <div class="aws-card-body chart-card-body">
             <div class="chart-container">
-              <canvas id="graderCountDistributionChart"></canvas>
+              <canvas id="graderVarianceCorrelationChart"></canvas>
+              <div id="noDataCorrelation" class="chart-no-data hidden">
+                <i class="fa-solid fa-chart-line"></i>
+                <p>No fully graded participants available for correlation.</p>
+              </div>
             </div>
           </div>
         </div>
