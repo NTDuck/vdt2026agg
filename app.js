@@ -243,6 +243,14 @@ function setupEventListeners() {
     renderTimeChart();
   });
 
+  // Bin size select for histogram
+  const binSizeSelect = document.getElementById('binSizeSelect');
+  if (binSizeSelect) {
+    binSizeSelect.addEventListener('change', () => {
+      renderDistributionChart();
+    });
+  }
+
   // Pagination buttons
   const prevPageBtn = document.getElementById('prevPageBtn');
   prevPageBtn.addEventListener('click', () => {
@@ -711,10 +719,14 @@ function renderQuickStats() {
     avg = sum / gradedPart.length;
   }
 
-  document.getElementById('statTotalStudents').innerText = total;
-  document.getElementById('statGradedStudents').innerText = graded;
-  document.getElementById('statResignedStudents').innerText = resigned;
-  document.getElementById('statAverageScore').innerText = avg.toFixed(2);
+  animateUpdateText(document.getElementById('statTotalStudents'), total);
+  animateUpdateText(document.getElementById('statGradedStudents'), graded);
+  animateUpdateText(document.getElementById('statResignedStudents'), resigned);
+  
+  const avgEl = document.getElementById('statAverageScore');
+  if (avgEl) {
+    animateUpdateText(avgEl, avg.toFixed(2));
+  }
 }
 
 /**
@@ -729,16 +741,16 @@ function renderMetricsTable() {
     
   const stats = calculateStats(scores);
   
-  document.getElementById('metricMean').innerText = stats.mean.toFixed(2);
-  document.getElementById('metricMax').innerText = stats.max.toFixed(2);
-  document.getElementById('metricMedian').innerText = stats.median.toFixed(2);
-  document.getElementById('metricMin').innerText = stats.min.toFixed(2);
-  document.getElementById('metricStd').innerText = stats.std.toFixed(2);
-  document.getElementById('metricP25').innerText = stats.p25.toFixed(2);
-  document.getElementById('metricP75').innerText = stats.p75.toFixed(2);
-  document.getElementById('metricP90').innerText = stats.p90.toFixed(2);
-  document.getElementById('metricP95').innerText = stats.p95.toFixed(2);
-  document.getElementById('metricGradedCount').innerText = scores.length;
+  animateUpdateText(document.getElementById('metricMean'), stats.mean.toFixed(2));
+  animateUpdateText(document.getElementById('metricMax'), stats.max.toFixed(2));
+  animateUpdateText(document.getElementById('metricMedian'), stats.median.toFixed(2));
+  animateUpdateText(document.getElementById('metricMin'), stats.min.toFixed(2));
+  animateUpdateText(document.getElementById('metricStd'), stats.std.toFixed(2));
+  animateUpdateText(document.getElementById('metricP25'), stats.p25.toFixed(2));
+  animateUpdateText(document.getElementById('metricP75'), stats.p75.toFixed(2));
+  animateUpdateText(document.getElementById('metricP90'), stats.p90.toFixed(2));
+  animateUpdateText(document.getElementById('metricP95'), stats.p95.toFixed(2));
+  animateUpdateText(document.getElementById('metricGradedCount'), scores.length);
 }
 
 /**
@@ -799,13 +811,29 @@ function renderDistributionChart() {
     noDataEl.classList.add('hidden');
   }
 
-  const bins = Array(101).fill(0);
-  scores.forEach(s => {
-    const rounded = Math.min(100, Math.max(0, Math.floor(s)));
-    bins[rounded]++;
-  });
+  const binSizeSelect = document.getElementById('binSizeSelect');
+  const B = binSizeSelect ? parseInt(binSizeSelect.value) : 1;
 
-  const labels = Array.from({ length: 101 }, (_, i) => i);
+  const labels = [];
+  const bins = [];
+  
+  for (let i = 0; i <= 100; i += B) {
+    if (i === 100 && B > 1) break;
+    const start = i;
+    const end = Math.min(100, i + B - 1);
+    const label = start === end ? `${start}` : `${start}-${end}`;
+    labels.push(label);
+    
+    const count = scores.filter(s => {
+      const val = Math.floor(s);
+      if (end < 100) {
+        return val >= start && val <= end;
+      } else {
+        return val >= start && val <= 100;
+      }
+    }).length;
+    bins.push(count);
+  }
 
   createOrUpdateChart(canvasId, {
     type: 'bar',
@@ -814,8 +842,8 @@ function renderDistributionChart() {
       datasets: [{
         label: 'Participant Count',
         data: bins,
-        backgroundColor: 'rgba(236, 114, 17, 0.75)',
-        borderColor: '#ec7211',
+        backgroundColor: 'rgba(0, 115, 187, 0.75)',
+        borderColor: '#0073bb',
         borderWidth: 1,
         barPercentage: 1.0,
         categoryPercentage: 1.0
@@ -837,18 +865,21 @@ function renderDistributionChart() {
           bodyFont: { family: 'Amazon Ember', size: 11 },
           displayColors: false,
           callbacks: {
-            title: (items) => `Score: ${items[0].label}`,
+            title: (items) => `Score Range: ${items[0].label}`,
             label: (item) => `${item.raw} participant(s)`
           }
         }
       },
       scales: {
         x: {
-          title: { display: true, text: 'Score Interval (Bin size = 1)', color: colors.text, font: { family: 'Amazon Ember', size: 9, weight: 600 } },
+          title: { display: true, text: `Score Interval (Bin size = ${B})`, color: colors.text, font: { family: 'Amazon Ember', size: 9, weight: 600 } },
           grid: { display: false },
           ticks: {
             callback: function(val, idx) {
-              return idx % 10 === 0 ? idx : '';
+              if (B === 1) {
+                return idx % 10 === 0 ? idx : '';
+              }
+              return labels[idx];
             },
             color: colors.text,
             font: { family: 'Amazon Ember', size: 9 }
@@ -1310,10 +1341,11 @@ function renderTableOnly() {
     
     let noteHtml = '';
     if (p.note) {
-      if (p.note.startsWith('http')) {
-        noteHtml = `<a href="${p.note}" target="_blank" class="note-link tooltip-trigger" data-tooltip="Open participant folder"><i class="fa-regular fa-folder-open"></i></a>`;
+      const cleanNote = String(p.note).trim();
+      if (cleanNote.startsWith('http') || cleanNote.includes('drive.google.com') || cleanNote.includes('github.com')) {
+        noteHtml = `<a href="${cleanNote}" target="_blank" class="note-link tooltip-trigger" data-tooltip="Open participant folder"><i class="fa-regular fa-folder-open"></i></a>`;
       } else {
-        noteHtml = `<span class="note-text tooltip-trigger" data-tooltip="${p.note}">${p.note}</span>`;
+        noteHtml = `<span class="note-comment-icon tooltip-trigger" data-tooltip="${cleanNote}"><i class="fa-regular fa-comment-dots"></i></span>`;
       }
     } else {
       noteHtml = `<span class="resigned-text">Resigned</span>`;
@@ -1482,4 +1514,15 @@ function normalizeParticipants(list) {
     if (p.session === 'Sáng') p.session = 'Morning';
     if (p.session === 'Chiều') p.session = 'Afternoon';
   });
+}
+
+/**
+ * Helper to update element inner text with a scale/fade change animation.
+ */
+function animateUpdateText(el, text) {
+  if (!el) return;
+  el.classList.remove('animate-value-change');
+  void el.offsetWidth; // Trigger reflow to restart CSS animation
+  el.innerText = text;
+  el.classList.add('animate-value-change');
 }

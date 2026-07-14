@@ -117,15 +117,15 @@
 
       <!-- Dash Title & Sync -->
       <div class="dashboard-header-row animate-fade-in">
-        <div class="title-section">
-          <h1 id="dashboardTitle">MiniProject Evaluations</h1>
-          <span class="subtitle" id="lastUpdatedDisplay">Status: Preloaded static data</span>
-        </div>
-        <div class="action-section">
+        <div class="title-section" style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
           <button id="refreshDataBtn" class="aws-btn aws-btn-primary">
             <i class="fa-solid fa-arrows-rotate"></i>
             <span>Refresh Data</span>
           </button>
+          <div>
+            <h1 id="dashboardTitle" style="margin: 0;">MiniProject Evaluations</h1>
+            <span class="subtitle" id="lastUpdatedDisplay">Status: Preloaded static data</span>
+          </div>
         </div>
       </div>
 
@@ -170,15 +170,6 @@
             <span class="stat-value" id="statResignedStudents">0</span>
           </div>
         </div>
-        <div class="stat-card">
-          <div class="stat-icon-wrapper orange-icon">
-            <i class="fa-solid fa-graduation-cap"></i>
-          </div>
-          <div class="stat-details">
-            <span class="stat-label">Average Score</span>
-            <span class="stat-value" id="statAverageScore">0.00</span>
-          </div>
-        </div>
       </section>
 
       <!-- Main Dashboard Grid Layout -->
@@ -194,19 +185,19 @@
               <table class="metrics-table">
                 <tbody>
                   <tr>
-                    <td class="metric-name"><i class="fa-solid fa-chart-line"></i> Mean Score</td>
+                    <td class="metric-name"><i class="fa-solid fa-chart-line"></i> Mean</td>
                     <td class="metric-val" id="metricMean">0.00</td>
-                    <td class="metric-name"><i class="fa-solid fa-arrow-down-9-1"></i> Max Score</td>
+                    <td class="metric-name"><i class="fa-solid fa-arrow-down-9-1"></i> Max</td>
                     <td class="metric-val" id="metricMax">0.00</td>
                   </tr>
                   <tr>
-                    <td class="metric-name"><i class="fa-solid fa-equals"></i> Median Score</td>
+                    <td class="metric-name"><i class="fa-solid fa-equals"></i> Median</td>
                     <td class="metric-val" id="metricMedian">0.00</td>
-                    <td class="metric-name"><i class="fa-solid fa-arrow-up-1-9"></i> Min Score</td>
+                    <td class="metric-name"><i class="fa-solid fa-arrow-up-1-9"></i> Min</td>
                     <td class="metric-val" id="metricMin">0.00</td>
                   </tr>
                   <tr>
-                    <td class="metric-name"><i class="fa-solid fa-arrow-trend-up"></i> Std Deviation</td>
+                    <td class="metric-name"><i class="fa-solid fa-arrow-trend-up"></i> Std Dev</td>
                     <td class="metric-val" id="metricStd">0.00</td>
                     <td class="metric-name"><i class="fa-solid fa-percent"></i> 95th Percentile</td>
                     <td class="metric-val" id="metricP95">0.00</td>
@@ -233,6 +224,14 @@
         <div class="aws-card">
           <div class="aws-card-header">
             <h2>Score Distribution Histogram</h2>
+            <div class="card-header-actions">
+              <label for="binSizeSelect" style="font-size: 0.75rem; margin-right: 6px; font-weight: 600; color: var(--text-secondary);">Bin Size:</label>
+              <select id="binSizeSelect" class="aws-select-sm">
+                <option value="1">1</option>
+                <option value="5">5</option>
+                <option value="10">10</option>
+              </select>
+            </div>
           </div>
           <div class="aws-card-body chart-card-body">
             <div class="chart-container">
@@ -266,7 +265,7 @@
         <!-- Grader Comparison Card -->
         <div class="aws-card">
           <div class="aws-card-header">
-            <h2>Grader Average Score</h2>
+            <h2>Mean Score by Grader</h2>
             <i class="fa-solid fa-circle-question tooltip-trigger card-info-icon" data-tooltip="Compares average scores given by each unique grader unit (e.g. VCS, VTNet, VHT, VTX) to check who tends to grade higher or lower."></i>
           </div>
           <div class="aws-card-body chart-card-body">
@@ -283,7 +282,7 @@
         <!-- Time Comparison Card -->
         <div class="aws-card">
           <div class="aws-card-header">
-            <h2>Score by Time</h2>
+            <h2>Mean Score by Time</h2>
             <div class="card-header-actions">
               <select id="timeCompareSelect" class="aws-select-sm">
                 <option value="session">Session (Morning/Afternoon)</option>
@@ -309,8 +308,8 @@
       <section class="aws-card table-card">
         <div class="aws-card-header table-card-header">
           <div class="table-header-left">
-            <h2>Participants Directory</h2>
-            <span class="table-count-badge" id="tableRecordCount">0 records found</span>
+            <h2>Participants</h2>
+            <span class="table-count-badge" id="tableRecordCount">0 records</span>
           </div>
         </div>
         <div class="aws-card-body no-padding">

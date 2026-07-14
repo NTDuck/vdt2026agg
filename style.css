@@ -1,9 +1,9 @@
 /* Theme System (Aesthetic light/dark console) */
 :root {
-  /* Common Accent & Status colors */
-  --accent-orange: #ec7211;
-  --accent-orange-hover: #dd6b10;
-  --accent-orange-glow: rgba(236, 114, 17, 0.25);
+  /* Common Accent & Status colors (Main is AWS Blue instead of Orange) */
+  --accent-primary: #0073bb;
+  --accent-primary-hover: #008cd6;
+  --accent-primary-glow: rgba(0, 115, 187, 0.25);
   --accent-blue: #0073bb;
   --accent-blue-hover: #008cd6;
   
@@ -235,9 +235,9 @@ body {
   color: var(--text-primary);
 }
 .track-tab.active {
-  background-color: var(--accent-orange);
+  background-color: var(--accent-primary);
   color: var(--text-white);
-  box-shadow: 0 2px 8px var(--accent-orange-glow);
+  box-shadow: 0 2px 8px var(--accent-primary-glow);
 }
 
 .table-filter-box {
@@ -273,7 +273,7 @@ body {
 }
 .table-search-box input:focus {
   width: 260px;
-  border-color: var(--accent-orange);
+  border-color: var(--accent-primary);
 }
 
 /* Collapsible Settings Drawer */
@@ -350,19 +350,28 @@ body {
   transition: all 0.2s ease;
 }
 .aws-checkbox-container input:checked + .checkmark {
-  background-color: var(--accent-orange);
-  border-color: var(--accent-orange);
+  background-color: var(--accent-primary);
+  border-color: var(--accent-primary);
 }
 .aws-checkbox-container input:checked + .checkmark::after {
   content: '';
   position: absolute;
-  left: 5px;
-  top: 2px;
-  width: 4px;
-  height: 8px;
+  left: 4.5px;
+  top: 1.5px;
+  width: 5px;
+  height: 9px;
   border: solid white;
   border-width: 0 2px 2px 0;
   transform: rotate(45deg);
+}
+
+/* Status: lastUpdatedDisplay styled same as metric-name */
+#lastUpdatedDisplay {
+  color: var(--text-secondary) !important;
+  font-weight: 500 !important;
+  font-size: 0.82rem !important;
+  display: block;
+  margin-top: 4px;
 }
 
 /* Dashboard Cards and Widgets */
@@ -583,12 +592,12 @@ body {
   border: none;
 }
 .aws-btn-primary {
-  background-color: var(--accent-orange);
+  background-color: var(--accent-primary);
   color: var(--text-white);
 }
 .aws-btn-primary:hover {
-  background-color: var(--accent-orange-hover);
-  box-shadow: 0 4px 12px var(--accent-orange-glow);
+  background-color: var(--accent-primary-hover);
+  box-shadow: 0 4px 12px var(--accent-primary-glow);
   transform: translateY(-1.5px);
 }
 .aws-btn-secondary {
@@ -625,9 +634,9 @@ body {
   gap: 12px;
 }
 .table-count-badge {
-  background-color: rgba(236, 114, 17, 0.08);
-  border: 1px solid rgba(236, 114, 17, 0.2);
-  color: var(--accent-orange);
+  background-color: rgba(0, 115, 187, 0.08);
+  border: 1px solid rgba(0, 115, 187, 0.2);
+  color: var(--accent-primary);
   font-size: 0.72rem;
   font-weight: 700;
   padding: 2px 10px;
@@ -668,6 +677,20 @@ body {
   white-space: nowrap;
 }
 
+/* Note Comments Icon Style */
+.note-comment-icon {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  cursor: help;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+.note-comment-icon:hover {
+  color: var(--accent-primary);
+}
+
 /* Animation on row updates */
 #tableBody tr {
   animation: trFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
@@ -677,13 +700,23 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Quick fade for numbers and states */
-.stat-value, .metric-val {
-  animation: valueFade 0.25s ease both;
+/* Quick spring scaling/fade animation on updates */
+.animate-value-change {
+  animation: valueChangeScale 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
-@keyframes valueFade {
-  from { opacity: 0.65; }
-  to { opacity: 1; }
+@keyframes valueChangeScale {
+  0% {
+    opacity: 0.4;
+    transform: scale(0.92);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.stat-value, .metric-val {
+  transition: color 0.2s ease;
 }
 
 .aws-table tbody tr {
@@ -695,7 +728,7 @@ body {
 
 .aws-table td.rank-col {
   font-weight: 700;
-  color: var(--accent-orange);
+  color: var(--accent-primary);
 }
 .aws-table td.score-col {
   font-weight: 700;
