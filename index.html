@@ -4,19 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>vdt2026agg</title>
-  
+
   <!-- SEO Meta Tags -->
   <meta name="description" content="A minimal console application built to aggregate and analyze the Viettel Digital Talent 2026 evaluations.">
-  
+
   <!-- Amazon Ember Web Font -->
   <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/amazon-fonts@1.0.1/fonts/stylesheet.css" />
-  
+
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
+
   <!-- Custom Stylesheet -->
   <link rel="stylesheet" href="style.css">
-  
+
   <!-- SheetJS & Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -52,14 +52,14 @@
           <option value="all">All Boards</option>
         </select>
       </div>
-      
+
       <!-- Search Input -->
       <div class="table-search-box">
         <i class="fa-solid fa-magnifying-glass"></i>
         <input type="text" id="tableSearch" placeholder="Filter by participant name...">
       </div>
     </div>
-    
+
     <div class="aws-header-right">
       <!-- Settings toggler -->
       <button id="toggleSettingsBtn" class="aws-btn-icon tooltip-trigger" data-tooltip="Configure Calculations & Spreadsheet Source">
@@ -112,7 +112,7 @@
 
   <!-- Layout Wrapper -->
   <div class="aws-layout">
-    
+
     <!-- Main Content Area -->
     <main class="aws-main-content">
 
@@ -175,7 +175,7 @@
 
       <!-- Main Dashboard Grid Layout -->
       <div class="dashboard-grid">
-        
+
         <!-- Score Metrics Card -->
         <div class="aws-card">
           <div class="aws-card-header">
@@ -233,7 +233,7 @@
             </div>
           </div>
         </div>
-        
+
         <!-- Score Distribution Histogram (Left) -->
         <div class="aws-card">
           <div class="aws-card-header">
@@ -274,12 +274,12 @@
             </div>
           </div>
         </div>
-        
+
       </div>
 
       <!-- Middle Grid: Grader and Time comparisons -->
       <div class="dashboard-grid-two">
-        
+
         <!-- Grader Comparison Card -->
         <div class="aws-card">
           <div class="aws-card-header">
@@ -319,7 +319,7 @@
             </div>
           </div>
         </div>
-        
+
       </div>
 
       <!-- Bottom Section: Database Table of Participants -->
@@ -372,25 +372,25 @@
               </tbody>
             </table>
           </div>
-          
+
           <!-- Table Empty State -->
           <div id="tableEmptyState" class="table-no-results-state hidden">
             <i class="fa-regular fa-folder-open"></i>
             <h3>No matching results</h3>
             <p>Try adjusting your search query, board filter, or active track.</p>
           </div>
-          
+
           <!-- Table Pagination Footer -->
           <div class="table-pagination-footer" id="tablePaginationFooter">
             <button id="prevPageBtn" class="aws-btn aws-btn-secondary tooltip-trigger" data-tooltip="Previous page">
               <i class="fa-solid fa-chevron-left"></i> Previous
             </button>
-            <span class="pagination-info" id="paginationInfo">Page 1 of 1</span>
+            <span class="pagination-info" id="paginationInfo">1/1</span>
             <button id="nextPageBtn" class="aws-btn aws-btn-secondary tooltip-trigger" data-tooltip="Next page">
               Next <i class="fa-solid fa-chevron-right"></i>
             </button>
           </div>
-          
+
         </div>
       </section>
 

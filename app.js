@@ -276,12 +276,12 @@ function setupEventListeners() {
   if (tableWrapper) {
     let lastScrollTop = tableWrapper.scrollTop;
     let scrollCooldown = false;
-    
+
     tableWrapper.addEventListener('scroll', () => {
       if (scrollCooldown) return;
-      
+
       const { scrollTop, scrollHeight, clientHeight } = tableWrapper;
-      
+
       if (scrollTop + clientHeight >= scrollHeight - 3) {
         const totalRecords = getFilteredListCount();
         const totalPages = Math.ceil(totalRecords / 10) || 1;
@@ -302,7 +302,7 @@ function setupEventListeners() {
           setTimeout(() => { scrollCooldown = false; }, 400);
         }
       }
-      
+
       lastScrollTop = tableWrapper.scrollTop;
     });
   }
@@ -1240,22 +1240,22 @@ function renderTimeChart() {
 function renderVarianceCorrelationChart() {
   const participants = getActiveTrackParticipants();
   const colors = getChartThemeColors();
-  
+
   const scatterData = [];
   participants.forEach(p => {
     if (p.isResigned || !p.hasGrading || !p.rank) return;
-    
+
     // Fully graded check: must have exactly 3 graders, all graded
     if (!p.graders || p.graders.length !== 3) return;
     if (!p.graders[0].graded || !p.graders[1].graded || !p.graders[2].graded) return;
-    
+
     const s1 = Number(p.graders[0].total) || 0;
     const s2 = Number(p.graders[1].total) || 0;
     const s3 = Number(p.graders[2].total) || 0;
-    
+
     const mean = (s1 + s2 + s3) / 3;
     const std = Math.sqrt(((s1 - mean)**2 + (s2 - mean)**2 + (s3 - mean)**2) / 3);
-    
+
     scatterData.push({
       x: p.rank,
       y: std,
@@ -1537,10 +1537,12 @@ function renderTableOnly() {
   tableBody.innerHTML = html;
 
   // Render pagination indicator and buttons states
-  document.getElementById('paginationInfo').innerText = `Page ${state.currentPage} of ${totalPages}`;
+  const xStr = String(state.currentPage).padStart(3, '0');
+  const yStr = String(totalPages).padStart(3, '0');
+  document.getElementById('paginationInfo').innerText = `${xStr}/${yStr}`;
   document.getElementById('prevPageBtn').disabled = state.currentPage === 1;
   document.getElementById('nextPageBtn').disabled = state.currentPage === totalPages;
-  
+
   state.prevPage = state.currentPage;
 }
 
