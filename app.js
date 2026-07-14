@@ -5,10 +5,6 @@
  * Implements 10-record pagination, "participant" vocabulary, and smooth layout animations.
  */
 
-// Configuration
-const DEFAULT_SPREADSHEET_ID = '16rUgoJlObiB6ymHkzyDrn5wTW5XtmpPumYUr5FvHd4g';
-const DEFAULT_SPREADSHEET_URL = 'https://docs.google.com/spreadsheets/d/16rUgoJlObiB6ymHkzyDrn5wTW5XtmpPumYUr5FvHd4g/edit?gid=2076177057#gid=2076177057';
-
 // Application State
 const state = {
   spreadsheetId: DEFAULT_SPREADSHEET_ID,
@@ -24,18 +20,6 @@ const state = {
   theme: 'dark',       // Default theme, will be adjusted dynamically
   charts: {},          // ChartJS instances
   lastUpdated: ''
-};
-
-// Map of Mentor Unit to CSS Badge class names
-const UNIT_BADGE_CLASSES = {
-  'VCS': 'badge-vcs',
-  'VTNET': 'badge-vtnet',
-  'VTX': 'badge-vtx',
-  'VHT': 'badge-vht',
-  'VAC': 'badge-vac',
-  'VTIT': 'badge-vtit',
-  'VTT': 'badge-vtt',
-  'VAI': 'badge-vai'
 };
 
 // ==========================================================================
@@ -117,8 +101,7 @@ async function initApp() {
   setupEventListeners();
   loadSavedSettings();
 
-  // Pre-fill Spreadsheet URL input field
-  document.getElementById('sheetUrlInput').value = state.spreadsheetUrl;
+
 
   // Load initial dataset (prefer cache, then pre-compiled static JSON, then fetch live)
   await loadInitialData();
@@ -150,13 +133,7 @@ function setupEventListeners() {
     });
   });
 
-  // Toggle Settings panel button
-  const toggleSettingsBtn = document.getElementById('toggleSettingsBtn');
-  const settingsPanel = document.getElementById('settingsPanel');
-  toggleSettingsBtn.addEventListener('click', () => {
-    const isCollapsed = settingsPanel.classList.toggle('collapsed');
-    toggleSettingsBtn.classList.toggle('active', !isCollapsed);
-  });
+
 
   // Checkboxes inside settings panel
   const interpolateCheckbox = document.getElementById('interpolateScoreCheckbox');
@@ -200,37 +177,7 @@ function setupEventListeners() {
     renderTableOnly();
   });
 
-  // Configuration Apply button
-  const saveUrlBtn = document.getElementById('saveSheetUrlBtn');
-  saveUrlBtn.addEventListener('click', () => {
-    const inputVal = document.getElementById('sheetUrlInput').value;
-    const extractedId = getSpreadsheetId(inputVal);
-    if (!extractedId) {
-      showToast('Error', 'Invalid Google Sheets URL. Could not parse Spreadsheet ID.', 'danger');
-      return;
-    }
 
-    state.spreadsheetId = extractedId;
-    state.spreadsheetUrl = inputVal.includes('docs.google.com') ? inputVal : `https://docs.google.com/spreadsheets/d/${extractedId}/edit`;
-    saveSettings();
-
-    fetchSpreadsheetLive();
-  });
-
-  // Configuration Reset button
-  const resetUrlBtn = document.getElementById('resetSheetUrlBtn');
-  resetUrlBtn.addEventListener('click', () => {
-    state.spreadsheetId = DEFAULT_SPREADSHEET_ID;
-    state.spreadsheetUrl = DEFAULT_SPREADSHEET_URL;
-    document.getElementById('sheetUrlInput').value = DEFAULT_SPREADSHEET_URL;
-
-    localStorage.removeItem('vdt2026_custom_data');
-    localStorage.removeItem('vdt2026_sheet_id');
-    localStorage.removeItem('vdt2026_sheet_url');
-
-    showToast('Info', 'Reset to default spreadsheet. Reloading data...', 'info');
-    loadInitialData();
-  });
 
   // Refresh / Sync button
   const refreshBtn = document.getElementById('refreshDataBtn');
@@ -408,7 +355,10 @@ async function fetchSpreadsheetLive() {
 
     parseWorkbookData(workbook);
 
-    state.lastUpdated = `Synced live at ${new Date().toLocaleTimeString()} on ${new Date().toLocaleDateString()}`;
+    const now = new Date();
+    const unixTimestamp = Math.floor(now.getTime() / 1000);
+    const utcStr = now.toISOString().replace('T', ' ').substring(0, 19) + ' UTC';
+    state.lastUpdated = `Synced live at ${unixTimestamp} (${utcStr})`;
     const cacheObject = {
       all_participants: state.allParticipants,
       lastUpdated: state.lastUpdated
@@ -976,14 +926,14 @@ function renderGraderBreakdownChart() {
       datasets: [{
         data: [counts.resigned, counts.g0, counts.g1, counts.g2, counts.g3],
         backgroundColor: [
-          'rgba(223, 62, 62, 0.75)',   // Red
-          'rgba(100, 116, 139, 0.72)', // Gray
-          'rgba(248, 148, 6, 0.75)',   // Amber
-          'rgba(0, 115, 187, 0.75)',   // Blue
-          'rgba(46, 168, 90, 0.75)'    // Green
+          'rgba(0, 115, 187, 0.35)',
+          'rgba(0, 115, 187, 0.50)',
+          'rgba(0, 115, 187, 0.65)',
+          'rgba(0, 115, 187, 0.80)',
+          'rgba(0, 115, 187, 0.95)'
         ],
         borderColor: [
-          '#df3e3e', '#64748b', '#f89406', '#0073bb', '#2ea85a'
+          '#0073bb', '#0073bb', '#0073bb', '#0073bb', '#0073bb'
         ],
         borderWidth: 0
       }]
@@ -1190,8 +1140,8 @@ function renderTimeChart() {
       labels: chartData.map(d => d.label),
       datasets: [{
         data: chartData.map(d => d.avg.toFixed(2)),
-        backgroundColor: 'rgba(46, 168, 90, 0.75)',
-        borderColor: '#2ea85a',
+        backgroundColor: 'rgba(0, 115, 187, 0.75)',
+        borderColor: '#0073bb',
         borderWidth: 0
       }]
     },
@@ -1618,8 +1568,6 @@ function showToast(title, desc, type = 'info') {
  * Saves current config/settings to localStorage.
  */
 function saveSettings() {
-  localStorage.setItem('vdt2026_sheet_id', state.spreadsheetId);
-  localStorage.setItem('vdt2026_sheet_url', state.spreadsheetUrl);
   localStorage.setItem('vdt2026_theme', state.theme);
   localStorage.setItem('vdt2026_interpolate', state.interpolateScore ? 'true' : 'false');
   localStorage.setItem('vdt2026_include_resigned', state.includeResigned ? 'true' : 'false');
@@ -1629,14 +1577,10 @@ function saveSettings() {
  * Loads configuration settings from localStorage.
  */
 function loadSavedSettings() {
-  const savedId = localStorage.getItem('vdt2026_sheet_id');
-  const savedUrl = localStorage.getItem('vdt2026_sheet_url');
   const savedTheme = localStorage.getItem('vdt2026_theme');
   const savedInterpolate = localStorage.getItem('vdt2026_interpolate');
   const savedIncludeResigned = localStorage.getItem('vdt2026_include_resigned');
 
-  if (savedId) state.spreadsheetId = savedId;
-  if (savedUrl) state.spreadsheetUrl = savedUrl;
   if (savedTheme) {
     state.theme = savedTheme;
     applyTheme(savedTheme);
@@ -1644,23 +1588,12 @@ function loadSavedSettings() {
   if (savedInterpolate) state.interpolateScore = savedInterpolate === 'true';
   if (savedIncludeResigned) state.includeResigned = savedIncludeResigned === 'true';
 
-  // Sync checkboxes in settings UI drawer
+  // Sync checkboxes in topbar
   const interpolateCheckbox = document.getElementById('interpolateScoreCheckbox');
   if (interpolateCheckbox) interpolateCheckbox.checked = state.interpolateScore;
 
   const includeResignedCheckbox = document.getElementById('includeResignedCheckbox');
   if (includeResignedCheckbox) includeResignedCheckbox.checked = state.includeResigned;
-}
-
-/**
- * Parses and returns the 44-character spreadsheet ID from a Google Sheets URL.
- */
-function getSpreadsheetId(url) {
-  if (!url) return null;
-  const cleaned = url.trim();
-  if (cleaned.length === 44 && !cleaned.includes('/')) return cleaned;
-  const match = cleaned.match(/\/d\/([a-zA-Z0-9-_]{44})/);
-  return match ? match[1] : null;
 }
 
 /**

@@ -61,10 +61,21 @@
     </div>
 
     <div class="aws-header-right">
-      <!-- Settings toggler -->
-      <button id="toggleSettingsBtn" class="aws-btn-icon tooltip-trigger" data-tooltip="Configure Calculations & Spreadsheet Source">
-        <i class="fa-solid fa-sliders"></i>
-      </button>
+      <!-- Topbar Controls Checkboxes -->
+      <div class="topbar-checkboxes">
+        <label class="aws-checkbox-container">
+          <input type="checkbox" id="interpolateScoreCheckbox">
+          <span class="checkmark"></span>
+          <span class="checkbox-text">Interpolate</span>
+          <i class="fa-solid fa-circle-info tooltip-trigger" data-tooltip="Interpolates final score as average of actual evaluations only (ignores missing evaluations instead of dividing them as zero)."></i>
+        </label>
+        <label class="aws-checkbox-container">
+          <input type="checkbox" id="includeResignedCheckbox">
+          <span class="checkmark"></span>
+          <span class="checkbox-text">Include Resigned</span>
+          <i class="fa-solid fa-circle-info tooltip-trigger" data-tooltip="Includes resigned participants (those with empty notes or score = 0) in statistics calculations with a score of 0."></i>
+        </label>
+      </div>
 
       <!-- GitHub Link -->
       <a href="https://github.com/NTDuck/vdt2026agg" target="_blank" class="github-link tooltip-trigger" data-tooltip="View on GitHub">
@@ -77,38 +88,6 @@
       </button>
     </div>
   </header>
-
-  <!-- Collapsible Settings Panel -->
-  <div id="settingsPanel" class="settings-panel collapsible collapsed animate-fade-in">
-    <div class="settings-panel-content">
-      <div class="settings-section">
-        <h3>Spreadsheet Source</h3>
-        <div class="spreadsheet-config">
-          <input type="text" id="sheetUrlInput" class="aws-input" placeholder="Paste Google Sheets link...">
-          <button id="saveSheetUrlBtn" class="aws-btn aws-btn-primary">Apply</button>
-          <button id="resetSheetUrlBtn" class="aws-btn aws-btn-secondary tooltip-trigger" data-tooltip="Reset source link to default"><i class="fa-solid fa-rotate-left"></i></button>
-        </div>
-      </div>
-      <div class="settings-separator"></div>
-      <div class="settings-section">
-        <h3>Calculation Controls</h3>
-        <div class="checkbox-group">
-          <label class="aws-checkbox-container">
-            <input type="checkbox" id="interpolateScoreCheckbox">
-            <span class="checkmark"></span>
-            <span class="checkbox-text">Interpolate Final Scores</span>
-            <i class="fa-solid fa-circle-info tooltip-trigger" data-tooltip="Calculates final score as average of actual evaluations only (ignores missing evaluations instead of dividing them as zero)."></i>
-          </label>
-          <label class="aws-checkbox-container">
-            <input type="checkbox" id="includeResignedCheckbox">
-            <span class="checkmark"></span>
-            <span class="checkbox-text">Include Resigned Participants</span>
-            <i class="fa-solid fa-circle-info tooltip-trigger" data-tooltip="Includes resigned participants (those with empty notes or score = 0) in statistics calculations with a score of 0."></i>
-          </label>
-        </div>
-      </div>
-    </div>
-  </div>
 
   <!-- Layout Wrapper -->
   <div class="aws-layout">
@@ -354,13 +333,13 @@
                   <th>Board</th>
                   <th>Session</th>
                   <th>Date</th>
-                  <th>Time Slot</th>
-                  <th>Participant Name</th>
+                  <th>Time</th>
+                  <th>Participant</th>
                   <th>Phone</th>
-                  <th>Project ID</th>
+                  <th>Project</th>
                   <th>Mentor Unit</th>
                   <th>Note</th>
-                  <th style="text-align: right;">Final Score</th>
+                  <th style="text-align: right;">Score</th>
                 </tr>
               </thead>
               <tbody id="tableBody">
@@ -385,7 +364,7 @@
             <button id="prevPageBtn" class="aws-btn aws-btn-secondary tooltip-trigger" data-tooltip="Previous page">
               <i class="fa-solid fa-chevron-left"></i> Previous
             </button>
-            <span class="pagination-info" id="paginationInfo">1/1</span>
+            <span class="pagination-info" id="paginationInfo">001/001</span>
             <button id="nextPageBtn" class="aws-btn aws-btn-secondary tooltip-trigger" data-tooltip="Next page">
               Next <i class="fa-solid fa-chevron-right"></i>
             </button>
@@ -401,6 +380,7 @@
     <p>&copy; 2026 Viettel Digital Talent.</p>
   </footer>
 
+  <script src="config.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

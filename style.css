@@ -1,15 +1,15 @@
 /* Theme System (Aesthetic light/dark console) */
 :root {
-  /* Common Accent & Status colors (Main is AWS Blue instead of Orange) */
-  --accent-primary: #0073bb;
-  --accent-primary-hover: #008cd6;
-  --accent-primary-glow: rgba(0, 115, 187, 0.25);
-  --accent-blue: #0073bb;
-  --accent-blue-hover: #008cd6;
+  /* Common Accent & Status colors (Monotone gray system) */
+  --accent-primary: #475569;
+  --accent-primary-hover: #334155;
+  --accent-primary-glow: rgba(71, 85, 105, 0.20);
+  --accent-blue: #475569;
+  --accent-blue-hover: #334155;
   
-  --color-success: #2ea85a;
-  --color-warning: #f89406;
-  --color-danger: #df3e3e;
+  --color-success: #64748b;
+  --color-warning: #475569;
+  --color-danger: #334155;
   
   /* Enforce Amazon Ember Web Font for everything */
   --font-sans: 'Amazon Ember', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -49,6 +49,12 @@
   --header-border: #eaeded;
   --header-btn-color: #545b64;
   --header-btn-hover: #16191f;
+
+  --accent-primary: #1e293b;
+  --accent-primary-hover: #0f172a;
+  --accent-primary-glow: rgba(30, 41, 59, 0.15);
+  --accent-blue: #1e293b;
+  --accent-blue-hover: #0f172a;
 }
 
 /* Dark Theme Variables */
@@ -79,6 +85,12 @@
   --header-border: rgba(255, 255, 255, 0.08);
   --header-btn-color: #94a3b8;
   --header-btn-hover: #ffffff;
+
+  --accent-primary: #cbd5e1;
+  --accent-primary-hover: #f1f5f9;
+  --accent-primary-glow: rgba(203, 213, 225, 0.15);
+  --accent-blue: #cbd5e1;
+  --accent-blue-hover: #f1f5f9;
 }
 
 /* Global Hidden Class */
@@ -292,56 +304,12 @@ body {
   border-color: var(--accent-primary);
 }
 
-/* Collapsible Settings Drawer */
-.settings-panel {
-  background-color: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-color);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-  transition: max-height 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease, padding 0.3s ease;
-  overflow: hidden;
-  max-height: 0;
-  opacity: 0;
-  padding: 0 32px;
-  position: sticky;
-  top: 60px;
-  z-index: 999;
-}
-.settings-panel:not(.collapsed) {
-  max-height: 500px;
-  opacity: 1;
-  padding: 20px 32px;
-}
-.settings-panel-content {
+/* Top Bar Checkbox Group Layout */
+.topbar-checkboxes {
   display: flex;
-  gap: 32px;
-  flex-wrap: wrap;
-  width: 100%;
-}
-.settings-section {
-  flex: 1;
-  min-width: 280px;
-}
-.settings-section h3 {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 14px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-.spreadsheet-config {
-  display: flex;
-  gap: 8px;
-}
-.settings-separator {
-  width: 1px;
-  background-color: var(--border-color);
-  align-self: stretch;
-}
-.checkbox-group {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  align-items: center;
+  gap: 16px;
+  margin-right: 16px;
 }
 
 /* Custom Checkbox styles */
@@ -421,10 +389,10 @@ body {
   justify-content: center;
   font-size: 1.1rem;
 }
-.blue-icon { background-color: rgba(0, 115, 187, 0.08); color: #3b82f6; }
-.green-icon { background-color: rgba(46, 168, 90, 0.08); color: #10b981; }
-.red-icon { background-color: rgba(223, 62, 62, 0.08); color: #f43f5e; }
-.orange-icon { background-color: rgba(236, 114, 17, 0.08); color: #f97316; }
+.blue-icon { background-color: rgba(148, 163, 184, 0.08); color: var(--text-secondary); }
+.green-icon { background-color: rgba(148, 163, 184, 0.08); color: var(--text-secondary); }
+.red-icon { background-color: rgba(148, 163, 184, 0.08); color: var(--text-secondary); }
+.orange-icon { background-color: rgba(148, 163, 184, 0.08); color: var(--text-secondary); }
 
 .stat-label {
   font-size: 0.72rem;
@@ -805,15 +773,19 @@ body {
   padding: 2px 8px;
   border-radius: var(--radius-pill);
 }
-.badge-vcs { background-color: rgba(59, 130, 246, 0.08); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.2); }
-.badge-vtnet { background-color: rgba(16, 185, 129, 0.08); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2); }
-.badge-vtx { background-color: rgba(167, 139, 250, 0.08); color: #c084fc; border: 1px solid rgba(167, 139, 250, 0.2); }
-.badge-vht { background-color: rgba(245, 158, 11, 0.08); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.2); }
-.badge-vac { background-color: rgba(236, 72, 153, 0.08); color: #f472b6; border: 1px solid rgba(236, 72, 153, 0.2); }
-.badge-vtit { background-color: rgba(20, 184, 166, 0.08); color: #2dd4bf; border: 1px solid rgba(20, 184, 166, 0.2); }
-.badge-vtt { background-color: rgba(239, 68, 68, 0.08); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.2); }
-.badge-vai { background-color: rgba(217, 70, 239, 0.08); color: #e879f9; border: 1px solid rgba(217, 70, 239, 0.2); }
-.badge-default { background-color: rgba(100, 116, 139, 0.08); color: #94a3b8; border: 1px solid rgba(100, 116, 139, 0.2); }
+.badge-vcs,
+.badge-vtnet,
+.badge-vtx,
+.badge-vht,
+.badge-vac,
+.badge-vtit,
+.badge-vtt,
+.badge-vai,
+.badge-default {
+  background-color: rgba(148, 163, 184, 0.08);
+  color: var(--text-secondary);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+}
 
 .note-link { color: var(--accent-blue); text-decoration: none; font-size: 0.95rem; }
 .note-link:hover { color: var(--accent-blue-hover); }
@@ -886,30 +858,14 @@ body {
 }
 
 /* Table Directory custom column badges/chips */
-.badge-board {
-  background-color: rgba(148, 163, 184, 0.08);
-  color: #94a3b8;
-  border: 1px solid rgba(148, 163, 184, 0.15);
-}
-.badge-session-morning {
-  background-color: rgba(245, 158, 11, 0.08);
-  color: #fbbf24;
-  border: 1px solid rgba(245, 158, 11, 0.15);
-}
-.badge-session-afternoon {
-  background-color: rgba(99, 102, 241, 0.08);
-  color: #818cf8;
-  border: 1px solid rgba(99, 102, 241, 0.15);
-}
-.badge-date {
-  background-color: rgba(20, 184, 166, 0.08);
-  color: #2dd4bf;
-  border: 1px solid rgba(20, 184, 166, 0.15);
-}
+.badge-board,
+.badge-session-morning,
+.badge-session-afternoon,
+.badge-date,
 .badge-slot {
-  background-color: rgba(59, 130, 246, 0.08);
-  color: #60a5fa;
-  border: 1px solid rgba(59, 130, 246, 0.15);
+  background-color: rgba(148, 163, 184, 0.08);
+  color: var(--text-secondary);
+  border: 1px solid rgba(148, 163, 184, 0.15);
 }
 
 /* Slide animations for pagination rows */
